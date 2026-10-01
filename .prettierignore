@@ -1,0 +1,7 @@
+node_modules
+.next
+pnpm-lock.yaml
+public/excalidraw-assets
+playwright-report
+test-results
+next-env.d.ts

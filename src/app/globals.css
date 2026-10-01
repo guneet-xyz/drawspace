@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --foreground: #252536;
+  --card: #ffffff;
+  --card-foreground: #252536;
+  --popover: #ffffff;
+  --popover-foreground: #252536;
+  --primary: #6960d7;
+  --primary-foreground: #ffffff;
+  --secondary: #f1effc;
+  --secondary-foreground: #5d55bb;
+  --muted: #f7f7fa;
+  --muted-foreground: #838391;
+  --accent: #f1effa;
+  --accent-foreground: #5149ae;
+  --destructive: #dc4444;
+  --border: #eaeaf0;
+  --input: #e2e2ea;
+  --ring: #8c83ea;
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: #e4dffc;
+  }
+}
+
+.dot-grid {
+  background-image: radial-gradient(#dad8ea 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.canvas-shell .excalidraw {
+  --color-primary: #6960d7;
+  --color-primary-darker: #5149ae;
+  --color-primary-light: #eeebff;
+}
+.canvas-shell {
+  height: calc(100dvh - 65px);
+}
+.preview-svg text {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
