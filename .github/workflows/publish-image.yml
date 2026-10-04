@@ -1,0 +1,220 @@
+name: Publish Docker image
+run-name: Publish ${{ inputs.tag }} to cr.guneet.dev
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Existing published release tag, for example v0.1.0
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release tag to publish or retry
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drawspace-image-release
+  cancel-in-progress: false
+
+env:
+  REGISTRY: cr.guneet.dev
+  IMAGE: cr.guneet.dev/drawspace/drawspace
+
+jobs:
+  prepare:
+    name: Validate release and resolve immutable source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+      short-sha: ${{ steps.version.outputs.short-sha }}
+      promote: ${{ steps.version.outputs.promote }}
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Choose a stable release tag in the form vX.Y.Z.'
+            exit 1
+          fi
+          release=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease)
+          jq --exit-status --arg tag "$RELEASE_TAG" '.tagName == $tag and .isDraft == false and .isPrerelease == false' <<< "$release"
+      - name: Check out the released source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - name: Resolve version and source revision
+        id: version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          version=${RELEASE_TAG#v}
+          if [[ "$(jq -r '.version' package.json)" != "$version" ]]; then
+            echo '::error::The release tag must match package.json version.'
+            exit 1
+          fi
+          sha=$(git rev-parse HEAD)
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+          promote=false
+          if [[ "$latest" == "$RELEASE_TAG" ]]; then promote=true; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short-sha=${sha:0:12}" >> "$GITHUB_OUTPUT"
+          echo "promote=$promote" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify the exact release commit
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  build:
+    name: Build and smoke-test ${{ matrix.arch }}
+    needs: [prepare, verify]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    environment: release
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || vars.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD || vars.DOCKER_PASSWORD }}
+      PLATFORM_IMAGE: cr.guneet.dev/drawspace/drawspace:${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: drawspace
+          POSTGRES_PASSWORD: smoke-test-password
+          POSTGRES_DB: drawspace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drawspace -d drawspace"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out the verified release commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - name: Check registry credentials
+        shell: bash
+        run: |
+          if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_PASSWORD" ]]; then
+            echo '::error::Set DOCKER_USERNAME and DOCKER_PASSWORD in the release environment.'
+            exit 1
+          fi
+      - name: Log in to the registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build the platform image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          push: false
+          tags: ${{ env.PLATFORM_IMAGE }}
+          labels: |
+            org.opencontainers.image.title=Drawspace
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha,scope=drawspace-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=drawspace-${{ matrix.arch }}
+      - name: Verify container startup, migrations, and health
+        shell: bash
+        run: |
+          docker run --detach --name drawspace-smoke --network host \
+            --env DATABASE_URL=postgres://drawspace:smoke-test-password@localhost:5432/drawspace \
+            --env APP_URL=http://localhost:3000 \
+            --env COOKIE_SECURE=false \
+            --env ALLOW_REGISTRATION=false \
+            "$PLATFORM_IMAGE"
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:3000/api/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs drawspace-smoke
+          exit 1
+      - name: Push the tested platform image
+        run: docker push "$PLATFORM_IMAGE"
+      - name: Container diagnostics
+        if: failure()
+        run: docker logs drawspace-smoke || true
+      - name: Remove smoke-test container
+        if: always()
+        run: docker rm --force drawspace-smoke || true
+
+  publish:
+    name: Publish multi-architecture release tags
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || vars.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD || vars.DOCKER_PASSWORD }}
+      VERSION: ${{ needs.prepare.outputs.version }}
+      SOURCE_SHA: ${{ needs.prepare.outputs.short-sha }}
+      PROMOTE: ${{ needs.prepare.outputs.promote }}
+    steps:
+      - name: Log in to the registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Publish the manifest and verify both architectures
+        shell: bash
+        run: |
+          tags=(--tag "$IMAGE:$VERSION" --tag "$IMAGE:v$VERSION" --tag "$IMAGE:sha-$SOURCE_SHA")
+          if [[ "$PROMOTE" == true ]]; then
+            tags+=(--tag "$IMAGE:latest" --tag "$IMAGE:${VERSION%.*}")
+          fi
+          docker buildx imagetools create "${tags[@]}" "$IMAGE:$VERSION-amd64" "$IMAGE:$VERSION-arm64"
+          docker buildx imagetools inspect "$IMAGE:$VERSION" --raw > /tmp/drawspace-manifest.json
+          jq --exit-status '[.manifests[].platform | select(.os == "linux") | .architecture] | sort == ["amd64", "arm64"]' /tmp/drawspace-manifest.json
+          {
+            echo '## Published Drawspace image'
+            echo "- Image: \`$IMAGE:$VERSION\`"
+            echo "- Git tag: \`v$VERSION\`"
+            echo '- Platforms: `linux/amd64`, `linux/arm64`'
+            echo "- Source: \`${{ needs.prepare.outputs.sha }}\`"
+            if [[ "$PROMOTE" == true ]]; then
+              echo "- Moving aliases: \`latest\`, \`${VERSION%.*}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

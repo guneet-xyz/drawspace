@@ -76,6 +76,60 @@ docker compose up --build -d
 
 Migrations are applied in filename order under a PostgreSQL advisory lock. `docker compose down` retains the named volume. **`docker compose down -v` deletes the database permanently.** Guest drawings and unsaved local recovery copies are only in the browser and are not included in server backups.
 
+## Published container images
+
+Stable releases are published to **`cr.guneet.dev/drawspace/drawspace`** for both **`linux/amd64`** and **`linux/arm64`**. Docker automatically selects the platform for your machine.
+
+To deploy the prebuilt image instead of building locally (Docker Compose 2.24+):
+
+```bash
+docker login cr.guneet.dev
+docker compose -f compose.yaml -f compose.release.yaml pull
+docker compose -f compose.yaml -f compose.release.yaml up -d
+```
+
+Use the same `.env` configuration as the local-build deployment. The override removes `build`, keeps the PostgreSQL volume and health checks, and defaults to the version committed in `compose.release.yaml`. Back up the database before upgrading. Override the image with `DRAWSPACE_IMAGE=cr.guneet.dev/drawspace/drawspace:0.1.0` to select a particular release, or `:latest` to follow the latest stable release.
+
+Published tags include:
+
+- `0.1.0` and `v0.1.0`: exact release version.
+- `0.1`: latest patch in that minor line, updated when that release is the latest stable release.
+- `latest`: latest stable GitHub release.
+- `sha-<12-character-commit>`: the exact release source revision.
+- `0.1.0-amd64` / `0.1.0-arm64`: the individual tested platform images.
+
+Re-publishing an older release does not move `latest` or the minor-line alias backwards.
+
+## CI/CD and automatic releases
+
+The workflows in `.github/workflows/` use pinned action commit SHAs:
+
+1. **CI** runs formatting, lint, TypeScript, unit tests, production builds, migrations, and Playwright tests against a disposable PostgreSQL service on pushes to `main` and pull requests. It can also be dispatched manually or called by another workflow.
+2. **Release Please** analyzes conventional commits on `main`, maintains a release PR, and updates `package.json`, `CHANGELOG.md`, `.release-please-manifest.json`, and the default image version in `compose.release.yaml`. The first release is **`0.1.0`**; this initial-version setting does not pin later releases to the same version.
+3. **Merge the release PR** when ready. Release Please creates the `vX.Y.Z` tag and GitHub release, then calls the publishing workflow directly. This works with the built-in `GITHUB_TOKEN`; no personal access token is required.
+4. **Publish Docker image** checks the release tag/version, reruns CI on that exact commit, builds each platform on a native GitHub runner, starts each container against PostgreSQL to verify startup and migrations, pushes the tested platform images, and publishes/verifies the multi-architecture manifest.
+
+Conventional commit examples:
+
+| Commit                                                           | Bump                      |
+| ---------------------------------------------------------------- | ------------------------- |
+| `fix: correct drawing autosave`                                  | Patch (`0.1.0` → `0.1.1`) |
+| `feat: add drawing history`                                      | Minor (`0.1.0` → `0.2.0`) |
+| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer | Major (`0.1.0` → `1.0.0`) |
+| `docs:`, `chore:`, or `ci:` without a breaking change            | No release on their own   |
+
+Use conventional commit messages on the commits that land on `main` (including the squash-merge title). Release PRs remain manually mergeable; future releases are not auto-merged.
+
+### GitHub configuration
+
+In **Settings → Environments → `release`**, configure **`DOCKER_USERNAME`** and **`DOCKER_PASSWORD`**, preferably as environment secrets. Environment variables with the same names are also supported; secrets take precedence. Only publishing jobs use this environment and these credentials. Credentials are not passed to Docker builds or exposed to pull-request CI.
+
+The repository must allow GitHub Actions to create pull requests. The Release Please job requests `contents: write`, `issues: write`, `pull-requests: write`, and `actions: write` (for dispatching CI on the release PR). All other jobs use read-only GitHub permissions. Environment approvals, if configured, gate registry publication.
+
+GitHub does not run `pull_request` workflows for PRs created with `GITHUB_TOKEN`. Release Please explicitly dispatches CI on the bot PR's branch, which runs the checks on its actual commit without requiring a PAT. Similarly, Docker publication is a reusable job in the release workflow, not a separate tag event that GitHub would suppress.
+
+To retry a failed image publication, dispatch **Publish Docker image** in the Actions tab with the existing GitHub release tag (for example `v0.1.0`). This validates the tag and republishes the same released source, without creating or bumping another version. Publishing is serialized to avoid overlapping updates to release aliases.
+
 ## Local development
 
 Requirements: Node.js 22+, pnpm 10, and PostgreSQL 17.

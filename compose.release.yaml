@@ -1,0 +1,7 @@
+# Use with: docker compose -f compose.yaml -f compose.release.yaml up -d
+# Requires Docker Compose 2.24+ for !reset.
+services:
+  app:
+    image: ${DRAWSPACE_IMAGE:-cr.guneet.dev/drawspace/drawspace:0.1.0} # x-release-please-version
+    build: !reset null
+    pull_policy: always
