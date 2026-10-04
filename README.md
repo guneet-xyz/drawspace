@@ -122,7 +122,7 @@ Use conventional commit messages on the commits that land on `main` (including t
 
 ### GitHub configuration
 
-In **Settings → Environments → `release`**, configure **`DOCKER_USERNAME`** and **`DOCKER_PASSWORD`**, preferably as environment secrets. Environment variables with the same names are also supported; secrets take precedence. Only publishing jobs use this environment and these credentials. Credentials are not passed to Docker builds or exposed to pull-request CI.
+In **Settings → Environments → `release`**, configure the environment secrets **`DOCKER_USERNAME`** and **`DOCKER_PASSWORD`**. Publishing jobs expose them as environment variables with the same names; using secrets ensures GitHub masks their values in logs. Only publishing jobs use this environment and these credentials. Credentials are not passed to Docker builds or exposed to pull-request CI.
 
 The repository must allow GitHub Actions to create pull requests. The Release Please job requests `contents: write`, `issues: write`, `pull-requests: write`, and `actions: write` (for dispatching CI on the release PR). All other jobs use read-only GitHub permissions. Environment approvals, if configured, gate registry publication.
 

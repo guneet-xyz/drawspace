@@ -99,8 +99,8 @@ jobs:
     timeout-minutes: 30
     environment: release
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || vars.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD || vars.DOCKER_PASSWORD }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       PLATFORM_IMAGE: cr.guneet.dev/drawspace/drawspace:${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
     services:
       postgres:
@@ -184,8 +184,8 @@ jobs:
     timeout-minutes: 10
     environment: release
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || vars.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD || vars.DOCKER_PASSWORD }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       VERSION: ${{ needs.prepare.outputs.version }}
       SOURCE_SHA: ${{ needs.prepare.outputs.short-sha }}
       PROMOTE: ${{ needs.prepare.outputs.promote }}
