@@ -13,9 +13,13 @@ import { IdeaPreview } from '@/components/idea-preview'
 export function AuthForm({
   mode,
   registrationEnabled = true,
+  discordEnabled = false,
+  discordError,
 }: {
   mode: 'login' | 'signup'
   registrationEnabled?: boolean
+  discordEnabled?: boolean
+  discordError?: string
 }) {
   const signup = mode === 'signup'
   const router = useRouter()
@@ -76,6 +80,28 @@ export function AuthForm({
               ? 'Create an account. Your first workspace is on us.'
               : 'Your next great idea is right where you left it.'}
           </p>
+          {discordError && (
+            <p
+              role="alert"
+              className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-destructive"
+            >
+              {discordError}
+            </p>
+          )}
+          {discordEnabled && (!signup || registrationEnabled) && (
+            <div className="mt-8">
+              <form action="/api/auth/discord" method="get">
+                <Button variant="outline" size="lg" className="w-full">
+                  Continue with Discord
+                </Button>
+              </form>
+              <div className="mt-6 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                or continue with email
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            </div>
+          )}
           {signup && !registrationEnabled ? (
             <div className="mt-8 rounded-xl border bg-muted p-5 text-sm">
               New registrations are disabled. Contact your administrator to get

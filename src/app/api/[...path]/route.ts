@@ -213,6 +213,11 @@ async function handle(
         .parse(await body(req))
       const [record] =
         await sql`SELECT password_hash FROM users WHERE id = ${user.id}`
+      if (!record.password_hash)
+        throw new HttpError(
+          400,
+          'This account signs in with Discord and has no password to change.',
+        )
       if (!(await verifyPassword(data.currentPassword, record.password_hash)))
         throw new HttpError(400, 'Your current password is incorrect.')
       const passwordHash = await hashPassword(data.password)
