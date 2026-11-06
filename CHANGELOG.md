@@ -6,6 +6,13 @@
 
 - Add optional Discord login, secure explicit account linking, and Discord-only account settings ([#2](https://github.com/guneet-xyz/drawspace/issues/2)).
 
+## [0.2.0](https://github.com/guneet-xyz/drawspace/compare/v0.1.0...v0.2.0) (2026-11-06)
+
+
+### Features
+
+* add Discord login ([97d94d2](https://github.com/guneet-xyz/drawspace/commit/97d94d20214ecc3036a9cea8b32e9a894fe38d68))
+
 ## 0.1.0 (2026-10-04)
 
 
