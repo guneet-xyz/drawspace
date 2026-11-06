@@ -8,7 +8,9 @@ test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe e
   page,
 }) => {
   await page.goto('/login?discord_error=denied')
-  await expect(page.getByRole('alert')).toContainText('cancelled')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'cancelled',
+  )
   const start = await page.request.get('/api/auth/discord', { maxRedirects: 0 })
   expect(start.status()).toBe(303)
   const target = new URL(start.headers().location)
@@ -31,7 +33,9 @@ test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe e
       `${origin}/login?discord_error=state`,
     )
     await page.goto(invalid.headers().location)
-    await expect(page.getByRole('alert')).toContainText('expired')
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(
+      'expired',
+    )
   } else {
     expect(target.pathname).toBe('/login')
     expect(target.searchParams.get('discord_error')).toBe('disabled')
@@ -41,7 +45,7 @@ test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe e
     page.getByRole('button', { name: 'Continue with Discord' }),
   ).toHaveCount(enabled ? 1 : 0)
   await page.goto('/login?discord_error=untrusted-provider-message')
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0)
 })
 
 async function register(
