@@ -4,6 +4,46 @@ const origin = process.env.E2E_BASE_URL || 'http://localhost:3000'
 const headers = { Origin: origin }
 const password = 'testing-a-strong-password'
 
+test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe errors', async ({
+  page,
+}) => {
+  await page.goto('/login?discord_error=denied')
+  await expect(page.getByRole('alert')).toContainText('cancelled')
+  const start = await page.request.get('/api/auth/discord', { maxRedirects: 0 })
+  expect(start.status()).toBe(303)
+  const target = new URL(start.headers().location)
+  const enabled = target.origin === 'https://discord.com'
+  await expect(
+    page.getByRole('button', { name: 'Continue with Discord' }),
+  ).toHaveCount(enabled ? 1 : 0)
+  if (enabled) {
+    expect(target.searchParams.get('redirect_uri')).toBe(
+      `${origin}/api/auth/discord/callback`,
+    )
+    expect(target.searchParams.get('code_challenge_method')).toBe('S256')
+    expect(target.searchParams.has('client_secret')).toBe(false)
+    expect(start.headers()['cache-control']).toBe('no-store')
+    const invalid = await page.request.get(
+      '/api/auth/discord/callback?state=invalid&code=invalid',
+      { maxRedirects: 0 },
+    )
+    expect(invalid.headers().location).toBe(
+      `${origin}/login?discord_error=state`,
+    )
+    await page.goto(invalid.headers().location)
+    await expect(page.getByRole('alert')).toContainText('expired')
+  } else {
+    expect(target.pathname).toBe('/login')
+    expect(target.searchParams.get('discord_error')).toBe('disabled')
+  }
+  await page.goto('/signup')
+  await expect(
+    page.getByRole('button', { name: 'Continue with Discord' }),
+  ).toHaveCount(enabled ? 1 : 0)
+  await page.goto('/login?discord_error=untrusted-provider-message')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
 async function register(
   request: APIRequestContext,
   name: string,

@@ -175,6 +175,15 @@ pnpm format:check
 pnpm build
 ```
 
+Discord's integration tests exercise real PostgreSQL transactions and mock only provider HTTP calls and Next.js request/session adapters. Run them against a **migrated, disposable database**, never production:
+
+```bash
+DATABASE_URL=postgres://drawspace:test-password@localhost:5432/drawspace_test pnpm db:migrate
+TEST_DATABASE_URL=postgres://drawspace:test-password@localhost:5432/drawspace_test pnpm test:integration
+```
+
+CI runs these tests against its disposable PostgreSQL service. No real Discord credentials or network calls to Discord are needed for the automated tests.
+
 For end-to-end tests, first start the application and database on the configured origin:
 
 ```bash
