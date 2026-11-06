@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add optional Discord login, secure explicit account linking, and Discord-only account settings ([#2](https://github.com/guneet-xyz/drawspace/issues/2)).
+
 ## 0.1.0 (2026-10-04)
 
 

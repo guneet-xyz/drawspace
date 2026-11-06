@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/auth'
 import { AuthForm } from '@/components/auth-form'
+import { discordEnabled } from '@/lib/discord'
 
 export const metadata = { title: 'Create an account' }
 export default async function Signup() {
@@ -9,6 +10,7 @@ export default async function Signup() {
     <AuthForm
       mode="signup"
       registrationEnabled={process.env.ALLOW_REGISTRATION !== 'false'}
+      discordEnabled={discordEnabled()}
     />
   )
 }

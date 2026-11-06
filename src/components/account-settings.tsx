@@ -8,7 +8,19 @@ import { api, json } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-export function AccountSettings({ user }: { user: User }) {
+export function AccountSettings({
+  user,
+  hasPassword,
+  discordEnabled,
+  discordConnected,
+  discordError,
+}: {
+  user: User
+  hasPassword: boolean
+  discordEnabled: boolean
+  discordConnected: boolean
+  discordError?: string
+}) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   async function save(
@@ -69,43 +81,70 @@ export function AccountSettings({ user }: { user: User }) {
           <Button disabled={busy}>Save profile</Button>
         </form>
       </section>
-      <section className="mt-6 rounded-2xl border p-6">
-        <h2 className="mb-1 text-sm font-semibold">Change password</h2>
-        <p className="mb-5 text-xs text-muted-foreground">
-          Changing your password signs you out on other devices.
+      {(discordEnabled || discordConnected) && (
+        <section className="mt-6 rounded-2xl border p-6">
+          <h2 className="mb-1 text-sm font-semibold">Discord</h2>
+          <p className="mb-5 text-xs text-muted-foreground">
+            {discordConnected
+              ? 'Your Discord account is connected. You can use it to sign in.'
+              : 'Connect your Discord account to sign in without your password.'}
+          </p>
+          {discordError && (
+            <p role="alert" className="mb-5 text-sm text-destructive">
+              {discordError}
+            </p>
+          )}
+          {discordEnabled && !discordConnected && (
+            <form action="/api/auth/discord" method="post">
+              <Button variant="outline">Connect Discord</Button>
+            </form>
+          )}
+        </section>
+      )}
+      {hasPassword ? (
+        <section className="mt-6 rounded-2xl border p-6">
+          <h2 className="mb-1 text-sm font-semibold">Change password</h2>
+          <p className="mb-5 text-xs text-muted-foreground">
+            Changing your password signs you out on other devices.
+          </p>
+          <form className="space-y-5" onSubmit={(event) => save(event, true)}>
+            <div className="space-y-2">
+              <label htmlFor="current-password" className="text-sm">
+                Current password
+              </label>
+              <Input
+                id="current-password"
+                name="currentPassword"
+                type="password"
+                autoComplete="current-password"
+                required
+                maxLength={128}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="new-password" className="text-sm">
+                New password
+              </label>
+              <Input
+                id="new-password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="At least 10 characters"
+                minLength={10}
+                maxLength={128}
+                required
+              />
+            </div>
+            <Button disabled={busy}>Update password</Button>
+          </form>
+        </section>
+      ) : (
+        <p className="mt-6 text-sm text-muted-foreground">
+          You sign in with Discord. Manage your password and account security on
+          Discord.
         </p>
-        <form className="space-y-5" onSubmit={(event) => save(event, true)}>
-          <div className="space-y-2">
-            <label htmlFor="current-password" className="text-sm">
-              Current password
-            </label>
-            <Input
-              id="current-password"
-              name="currentPassword"
-              type="password"
-              autoComplete="current-password"
-              required
-              maxLength={128}
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="new-password" className="text-sm">
-              New password
-            </label>
-            <Input
-              id="new-password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 10 characters"
-              minLength={10}
-              maxLength={128}
-              required
-            />
-          </div>
-          <Button disabled={busy}>Update password</Button>
-        </form>
-      </section>
+      )}
     </main>
   )
 }

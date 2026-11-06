@@ -5,6 +5,7 @@ A self-hosted home for sketches, diagrams, and shared ideas. Built with **Next.j
 ## Included
 
 - Email/password registration and sign-in; hashed passwords, database-backed sessions, profile settings, password changes, and sign-out.
+- Optional Discord OAuth sign-in and explicit account linking, using the same database-backed sessions.
 - Multiple workspaces with server-enforced owner, admin, editor, and viewer roles.
 - Add registered users to workspaces by email, change roles, and remove members.
 - Create, rename, duplicate, delete, search, sort, and favorite drawings; grid/list views.
@@ -53,6 +54,21 @@ Place the application behind an HTTPS reverse proxy (Caddy, Traefik, or Nginx), 
 `ALLOW_REGISTRATION=false` disables new registrations without affecting existing accounts or guest mode. Members must have an account on this instance before they can be added; there is no email delivery service or invitation email dependency.
 
 Shared links are bearer credentials. Anyone who has a link can view and download its drawing until it expires or is revoked. Avoid recording full `/share/…` URLs in proxy analytics/access logs. Share pages use `Referrer-Policy: no-referrer` and tokens are stored hashed in the database. A user who already downloaded a drawing retains their copy after revocation.
+
+### Discord login (optional)
+
+Authentication is implemented in the application with Next.js route handlers, Node.js `scrypt` password hashing, and PostgreSQL-backed sessions; it does not use NextAuth/Auth.js or Better Auth. Discord adds an OAuth2 authorization-code flow with PKCE and short-lived, single-use, browser-bound state to this existing system.
+
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Under **OAuth2**, add the exact redirect URI **`https://draw.example.com/api/auth/discord/callback`**, replacing the origin with your `APP_URL`. For local development, use `http://localhost:3000/api/auth/discord/callback` (or your configured port).
+3. Set `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in `.env`, using the application's OAuth2 client ID and secret, **not a bot token**. Keep the secret private; do not use `NEXT_PUBLIC_` variables. Compose forwards both variables to the application.
+4. Restart/redeploy the application using your normal deployment process. **Continue with Discord** appears on sign-in and registration pages only when both values are configured. No bot, guild membership, or privileged scopes are required; only `identify` and `email` are requested.
+
+Discord must provide a verified email address. New Discord users receive their own workspace and do not have a local password. Existing Discord users sign in by their stable Discord user ID, even if their Discord email changes. `ALLOW_REGISTRATION=false` blocks new Discord accounts, but existing Discord logins and linking from existing accounts still work.
+
+**Existing email/password users:** sign in normally, open **Account settings**, and choose **Connect Discord**. Accounts are never automatically merged based on matching emails because local email addresses are not verified. If a Discord login matches an existing email, it asks you to sign in with your password and connect explicitly. Linking preserves your profile, workspaces, password, and memberships. One Discord account can connect to only one Drawspace account, and each Drawspace account can connect to only one Discord account. Self-service unlinking and adding a password to Discord-only accounts are not currently supported.
+
+Provider access/refresh tokens are not persisted. Existing sessions retain their normal 30-day lifetime and sign-out behavior. Avoid logging query strings on `/api/auth/discord/callback`, which carry temporary authorization codes. Apply edge rate limiting to `/api/auth/discord` as well as password login and registration. Removing the Discord configuration hides the option and disables Discord authentication; provide another access path before doing so for Discord-only users.
 
 ### Backups and upgrades
 
@@ -159,6 +175,15 @@ pnpm format:check
 pnpm build
 ```
 
+Discord's integration tests exercise real PostgreSQL transactions and mock only provider HTTP calls and Next.js request/session adapters. Run them against a **migrated, disposable database**, never production:
+
+```bash
+DATABASE_URL=postgres://drawspace:test-password@localhost:5432/drawspace_test pnpm db:migrate
+TEST_DATABASE_URL=postgres://drawspace:test-password@localhost:5432/drawspace_test pnpm test:integration
+```
+
+CI runs these tests against its disposable PostgreSQL service. No real Discord credentials or network calls to Discord are needed for the automated tests.
+
 For end-to-end tests, first start the application and database on the configured origin:
 
 ```bash
@@ -201,7 +226,7 @@ Dockerfile + compose.yaml   deployment
 
 ## Scope
 
-This is shared **persistent workspace storage**, not simultaneous multiplayer editing. Shared viewers see the latest drawing after reloading. Concurrent edits are protected by version checks; on a conflict, export your local work and reload rather than overwriting another person's save. The app has no SSO, email verification, password-reset email, owner transfer, drawing history, or soft-delete/trash. Drawings have a 16 MB API payload limit. Guest mode uses browser storage, whose capacity depends on the browser.
+This is shared **persistent workspace storage**, not simultaneous multiplayer editing. Shared viewers see the latest drawing after reloading. Concurrent edits are protected by version checks; on a conflict, export your local work and reload rather than overwriting another person's save. Apart from optional Discord OAuth, the app has no other SSO providers, local email verification, password-reset email, owner transfer, drawing history, or soft-delete/trash. Drawings have a 16 MB API payload limit. Guest mode uses browser storage, whose capacity depends on the browser.
 
 ## Credits
 
