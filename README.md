@@ -5,7 +5,7 @@ A self-hosted home for sketches, diagrams, and shared ideas. Built with **Next.j
 ## Included
 
 - Email/password registration and sign-in; hashed passwords, database-backed sessions, profile settings, password changes, and sign-out.
-- Optional Discord OAuth sign-in and explicit account linking, using the same database-backed sessions.
+- Optional Discord OAuth sign-in and account linking, including email-confirmed connection of existing accounts through Amazon SES, using the same database-backed sessions.
 - Multiple workspaces with server-enforced owner, admin, editor, and viewer roles.
 - Add registered users to workspaces by email, change roles, and remove members.
 - Create, rename, duplicate, delete, search, sort, and favorite drawings; grid/list views.
@@ -66,9 +66,30 @@ Authentication is implemented in the application with Next.js route handlers, No
 
 Discord must provide a verified email address. New Discord users receive their own workspace and do not have a local password. Existing Discord users sign in by their stable Discord user ID, even if their Discord email changes. `ALLOW_REGISTRATION=false` blocks new Discord accounts, but existing Discord logins and linking from existing accounts still work.
 
-**Existing email/password users:** sign in normally, open **Account settings**, and choose **Connect Discord**. Accounts are never automatically merged based on matching emails because local email addresses are not verified. If a Discord login matches an existing email, it asks you to sign in with your password and connect explicitly. Linking preserves your profile, workspaces, password, and memberships. One Discord account can connect to only one Drawspace account, and each Drawspace account can connect to only one Discord account. Self-service unlinking and adding a password to Discord-only accounts are not currently supported.
+**Existing email/password users** can connect Discord in either of two ways:
 
-Provider access/refresh tokens are not persisted. Existing sessions retain their normal 30-day lifetime and sign-out behavior. Avoid logging query strings on `/api/auth/discord/callback`, which carry temporary authorization codes. Apply edge rate limiting to `/api/auth/discord` as well as password login and registration. Removing the Discord configuration hides the option and disables Discord authentication; provide another access path before doing so for Discord-only users.
+- Sign in with your password, open **Account settings**, and choose **Connect Discord**.
+- Choose **Continue with Discord**. If Discord's verified email matches an existing account and [email delivery](#email-delivery-optional) is configured, Drawspace emails a confirmation link to that address, valid for 30 minutes and usable once. Opening it shows a confirmation page; choosing **Connect Discord** there connects the account and signs you in. Without email delivery, Drawspace asks you to sign in with your password and connect from settings instead.
+
+Accounts are never merged on a matching email alone, because local email addresses are not verified at registration: the email route requires both Discord's verified email **and** control of the mailbox. Confirming signs out every existing session for the account. Because someone else could have registered your address and chosen its password, the confirmation page also offers to **turn off password sign-in**. Linking preserves your profile, workspaces, and memberships, and the password unless you turn it off. Existing accounts can connect Discord even with `ALLOW_REGISTRATION=false`. One Discord account can connect to only one Drawspace account, and each Drawspace account can connect to only one Discord account. Self-service unlinking and adding a password to Discord-only accounts are not currently supported.
+
+Provider access/refresh tokens are not persisted. Existing sessions retain their normal 30-day lifetime and sign-out behavior. Avoid logging query strings on `/api/auth/discord/callback` and `/auth/discord/confirm`, which carry temporary authorization codes and confirmation tokens. Apply edge rate limiting to `/api/auth/discord` as well as password login and registration. Removing the Discord configuration hides the option and disables Discord authentication; provide another access path before doing so for Discord-only users.
+
+### Email delivery (optional)
+
+Drawspace sends one kind of email: Discord connection confirmations. It uses the [Amazon SES v2 `SendEmail` API](https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_SendEmail.html). Configure it with:
+
+```dotenv
+EMAIL_FROM=auth@example.com
+AWS_REGION=us-east-1
+SES_CONFIGURATION_SET=          # optional
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+Email is enabled only when `EMAIL_FROM`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` are all set. The sender must be a verified SES identity, and the account needs SES production access to email arbitrary recipients. Use a dedicated IAM identity limited to `ses:SendEmail` (optionally conditioned on `ses:FromAddress` and the configuration set). Credentials are read only by the server; never use `NEXT_PUBLIC_` variables. On hosts without EC2 instance metadata, also set `AWS_EC2_METADATA_DISABLED=true`.
+
+Each account can request at most 3 confirmation emails per hour, and the instance at most 200 per hour. A new request invalidates the account's previous link. Tokens are stored hashed. Delivery errors are not logged verbatim, and Drawspace does not process bounce or complaint notifications.
 
 ### Backups and upgrades
 
