@@ -15,11 +15,13 @@ export function AuthForm({
   registrationEnabled = true,
   discordEnabled = false,
   discordError,
+  notice,
 }: {
   mode: 'login' | 'signup'
   registrationEnabled?: boolean
   discordEnabled?: boolean
   discordError?: string
+  notice?: string
 }) {
   const signup = mode === 'signup'
   const router = useRouter()
@@ -86,6 +88,11 @@ export function AuthForm({
               className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-destructive"
             >
               {discordError}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="mt-6 rounded-lg bg-muted p-3 text-sm">
+              {notice}
             </p>
           )}
           {discordEnabled && (!signup || registrationEnabled) && (

@@ -12,6 +12,16 @@ export class DiscordError extends Error {
   }
 }
 
+/** The verified Discord email belongs to an existing, unconnected account. */
+export class DiscordEmailMatch extends DiscordError {
+  constructor(
+    public userId: string,
+    public profile: DiscordProfile,
+  ) {
+    super('account_exists')
+  }
+}
+
 export function discordEnabled() {
   return Boolean(
     process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET,
@@ -123,12 +133,16 @@ export async function resolveDiscordUser(
       `
       return user
     }
+    const [matching] =
+      await tx`SELECT id, discord_id FROM users WHERE email = ${profile.email}`
+    // Local emails aren't verified: never automatically merge by email. The
+    // caller may ask the mailbox owner to confirm the connection instead.
+    if (matching) {
+      if (matching.discord_id) throw new DiscordError('linked')
+      throw new DiscordEmailMatch(matching.id, profile)
+    }
     if (process.env.ALLOW_REGISTRATION === 'false')
       throw new DiscordError('registration')
-    const [matching] =
-      await tx`SELECT id FROM users WHERE email = ${profile.email}`
-    // Local emails aren't verified: never automatically merge by email.
-    if (matching) throw new DiscordError('account_exists')
     const name = profile.global_name || profile.username
     const [user] = await tx<User[]>`
       INSERT INTO users (name, email, discord_id)

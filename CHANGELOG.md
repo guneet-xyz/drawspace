@@ -4,7 +4,7 @@
 
 ### Features
 
-- Add optional Discord login, secure explicit account linking, and Discord-only account settings ([#2](https://github.com/guneet-xyz/drawspace/issues/2)).
+- Connect Discord to an existing account by confirming a link sent to its email address, without the old password ([#5](https://github.com/guneet-xyz/drawspace/issues/5)).
 
 ## [0.2.0](https://github.com/guneet-xyz/drawspace/compare/v0.1.0...v0.2.0) (2026-11-06)
 
