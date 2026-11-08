@@ -6,12 +6,15 @@ import { hashToken, token } from '@/lib/crypto'
 import { sql } from '@/lib/db'
 import {
   appOrigin,
+  DiscordEmailMatch,
   DiscordError,
   discordAuthorizationUrl,
   discordEnabled,
   getDiscordProfile,
   resolveDiscordUser,
 } from '@/lib/discord'
+import { requestDiscordEmailLink } from '@/lib/discord-email-link'
+import { mailEnabled } from '@/lib/mail'
 
 const FLOW_COOKIE = 'drawspace_discord'
 const cookieOptions = () => ({
@@ -87,11 +90,18 @@ export async function finishDiscord(req: NextRequest) {
     const code = req.nextUrl.searchParams.get('code')
     if (!code || code.length > 2048) throw new DiscordError('failed')
     const profile = await getDiscordProfile(code, flow.code_verifier)
-    const account = await resolveDiscordUser(profile, flow.link_user_id)
-    await createSession(account.id)
-    response = redirect(
-      linking ? '/app/settings?discord_connected=true' : '/app',
-    )
+    try {
+      const account = await resolveDiscordUser(profile, flow.link_user_id)
+      await createSession(account.id)
+      response = redirect(
+        linking ? '/app/settings?discord_connected=true' : '/app',
+      )
+    } catch (error) {
+      if (!(error instanceof DiscordEmailMatch) || linking || !mailEnabled())
+        throw error
+      await requestDiscordEmailLink(error.userId, error.profile)
+      response = redirect('/login?discord_email=sent')
+    }
   } catch (error) {
     const code =
       error instanceof DiscordError

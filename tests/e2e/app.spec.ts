@@ -46,6 +46,21 @@ test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe e
   ).toHaveCount(enabled ? 1 : 0)
   await page.goto('/login?discord_error=untrusted-provider-message')
   await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0)
+  await page.goto('/login?discord_email=sent')
+  await expect(page.getByRole('status')).toContainText('Check your email')
+  await page.goto('/auth/discord/confirm?token=invalid')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'invalid, expired',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Connect Discord' }),
+  ).toHaveCount(0)
+  const forged = await page.request.post('/api/auth/discord/confirm', {
+    headers: { Origin: 'https://attacker.example' },
+    form: { token: 'a'.repeat(43) },
+    maxRedirects: 0,
+  })
+  expect(forged.status()).toBe(403)
 })
 
 async function register(

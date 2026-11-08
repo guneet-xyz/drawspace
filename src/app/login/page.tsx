@@ -8,7 +8,7 @@ export const metadata = { title: 'Sign in' }
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ discord_error?: string }>
+  searchParams: Promise<{ discord_error?: string; discord_email?: string }>
 }) {
   if (await getUser()) redirect('/app')
   const params = await searchParams
@@ -17,6 +17,11 @@ export default async function Login({
       mode="login"
       discordEnabled={discordEnabled()}
       discordError={discordErrorMessage(params.discord_error)}
+      notice={
+        params.discord_email === 'sent'
+          ? 'Check your email. We sent a link to connect Discord to your existing account.'
+          : undefined
+      }
     />
   )
 }

@@ -7,6 +7,7 @@ import { createSession, getUser, SESSION_COOKIE } from '@/lib/auth'
 import { hashPassword, hashToken, token, verifyPassword } from '@/lib/crypto'
 import { getDrawing, getDrawings, getMembers, getWorkspaces } from '@/lib/data'
 import { canEdit, canManage, canManageMember } from '@/lib/permissions'
+import { consumeRateLimit } from '@/lib/rate-limit'
 import {
   emailSchema,
   idSchema,
@@ -68,15 +69,7 @@ async function body(req: NextRequest): Promise<unknown> {
 }
 
 async function rateLimit(key: string, max: number, seconds: number) {
-  const [row] = await sql`
-    INSERT INTO rate_limits (key, attempts, resets_at) VALUES (${key}, 1, now() + ${seconds} * interval '1 second')
-    ON CONFLICT (key) DO UPDATE SET
-      attempts = CASE WHEN rate_limits.resets_at < now() THEN 1 ELSE rate_limits.attempts + 1 END,
-      resets_at = CASE WHEN rate_limits.resets_at < now() THEN now() + ${seconds} * interval '1 second' ELSE rate_limits.resets_at END
-    RETURNING attempts
-  `
-  await sql`DELETE FROM rate_limits WHERE resets_at < now() - interval '1 day'`
-  if (row.attempts > max)
+  if (!(await consumeRateLimit(key, max, seconds)))
     throw new HttpError(429, 'Too many attempts. Please try again later.')
 }
 
