@@ -5,6 +5,7 @@ import { AccountSettings } from '@/components/account-settings'
 import { sql } from '@/lib/db'
 import { discordEnabled } from '@/lib/discord'
 import { discordErrorMessage } from '@/lib/discord-messages'
+import { mailEnabled } from '@/lib/mail'
 
 export const metadata = { title: 'Account settings' }
 export default async function SettingsPage({
@@ -26,6 +27,7 @@ export default async function SettingsPage({
         hasPassword={account.has_password}
         discordEnabled={discordEnabled()}
         discordConnected={account.discord_connected}
+        emailEnabled={mailEnabled()}
         discordError={discordErrorMessage(params.discord_error)}
       />
     </AppShell>

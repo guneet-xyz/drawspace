@@ -33,6 +33,13 @@ jobs:
       ALLOW_REGISTRATION: 'true'
       DISCORD_CLIENT_ID: ci-discord-client-id
       DISCORD_CLIENT_SECRET: ci-discord-client-secret
+      # Browser tests answer SES calls with a local fake; no real email is sent.
+      EMAIL_FROM: ci@example.com
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ci-test-only
+      AWS_SECRET_ACCESS_KEY: ci-test-only
+      AWS_ENDPOINT_URL_SESV2: http://127.0.0.1:4599
+      AWS_EC2_METADATA_DISABLED: 'true'
     services:
       postgres:
         image: postgres:17-bookworm

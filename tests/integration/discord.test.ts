@@ -117,6 +117,7 @@ beforeEach(() => {
   vi.stubEnv('ALLOW_REGISTRATION', 'true')
   vi.stubEnv('DISCORD_CLIENT_ID', 'test-client-id')
   vi.stubEnv('DISCORD_CLIENT_SECRET', 'test-client-secret')
+  vi.stubEnv('EMAIL_FROM', '')
   vi.stubGlobal('fetch', fetchMock)
   fetchMock.mockReset()
   cookieJar.clear()

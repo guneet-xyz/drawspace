@@ -145,8 +145,8 @@ export async function resolveDiscordUser(
       throw new DiscordError('registration')
     const name = profile.global_name || profile.username
     const [user] = await tx<User[]>`
-      INSERT INTO users (name, email, discord_id)
-      VALUES (${name}, ${profile.email}, ${profile.id}) RETURNING id, name, email
+      INSERT INTO users (name, email, discord_id, email_verified_at)
+      VALUES (${name}, ${profile.email}, ${profile.id}, now()) RETURNING id, name, email
     `
     const [workspace] = await tx`
       INSERT INTO workspaces (name) VALUES (${`${name.split(' ')[0]}'s workspace`.slice(0, 80)}) RETURNING id

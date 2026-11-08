@@ -4,7 +4,7 @@
 
 ### Features
 
-- Connect Discord to an existing account by confirming a link sent to its email address, without the old password ([#5](https://github.com/guneet-xyz/drawspace/issues/5)).
+- Add **Forgot password?** reset links and passwordless email sign-in links, and track verified email addresses ([#8](https://github.com/guneet-xyz/drawspace/issues/8)).
 
 ## [0.3.0](https://github.com/guneet-xyz/drawspace/compare/v0.2.0...v0.3.0) (2026-11-08)
 
