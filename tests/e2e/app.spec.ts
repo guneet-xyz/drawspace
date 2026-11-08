@@ -528,6 +528,9 @@ test('forgot password and email sign-in links work end to end', async ({
     }
 
     await forgot.click()
+    await expect(
+      page.getByRole('heading', { name: 'Forgot your password?' }),
+    ).toBeVisible()
     await page.getByLabel('Email address').fill(email)
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByRole('status')).toContainText(
@@ -552,6 +555,9 @@ test('forgot password and email sign-in links work end to end', async ({
     await page.context().clearCookies()
     await page.goto('/login')
     await page.getByRole('link', { name: 'Email me a sign-in link' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Sign in with email' }),
+    ).toBeVisible()
     await page.getByLabel('Email address').fill(email)
     await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
     await expect(page.getByRole('status')).toContainText(
