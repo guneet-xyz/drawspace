@@ -3,6 +3,7 @@ import { getUser } from '@/lib/auth'
 import { AuthForm } from '@/components/auth-form'
 import { discordEnabled } from '@/lib/discord'
 import { discordErrorMessage } from '@/lib/discord-messages'
+import { mailEnabled } from '@/lib/mail'
 
 export const metadata = { title: 'Sign in' }
 export default async function Login({
@@ -16,6 +17,7 @@ export default async function Login({
     <AuthForm
       mode="login"
       discordEnabled={discordEnabled()}
+      emailEnabled={mailEnabled()}
       discordError={discordErrorMessage(params.discord_error)}
       notice={
         params.discord_email === 'sent'

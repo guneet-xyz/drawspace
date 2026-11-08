@@ -9,6 +9,12 @@ import { getDrawing, getDrawings, getMembers, getWorkspaces } from '@/lib/data'
 import { canEdit, canManage, canManageMember } from '@/lib/permissions'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import {
+  confirmEmailSignIn,
+  confirmPasswordReset,
+  requestEmailLink,
+} from '@/lib/email-auth'
+import { mailEnabled } from '@/lib/mail'
+import {
   emailSchema,
   idSchema,
   nameSchema,
@@ -182,6 +188,58 @@ async function handle(
           await sql`DELETE FROM sessions WHERE token_hash = ${hashToken(cookie)}`
         ;(await cookies()).delete(SESSION_COOKIE)
         return ok()
+      }
+      if (
+        (rawId === 'password-reset' || rawId === 'email-sign-in') &&
+        method === 'POST' &&
+        path.length <= 3
+      ) {
+        if (!mailEnabled())
+          throw new HttpError(404, 'Email links are not available here.')
+        const purpose =
+          rawId === 'password-reset' ? 'password_reset' : 'sign_in'
+        if (!action) {
+          const { email } = z
+            .object({ email: emailSchema })
+            .parse(await body(req))
+          const result = await requestEmailLink(purpose, email)
+          if (result === 'limited')
+            throw new HttpError(
+              429,
+              'Too many emails were requested. Please try again later.',
+            )
+          if (result === 'failed')
+            throw new HttpError(
+              503,
+              "We couldn't send the email. Please try again later.",
+            )
+          // Same response whether or not an account exists.
+          return ok()
+        }
+        if (action === 'confirm') {
+          let user
+          if (purpose === 'password_reset') {
+            const data = z
+              .object({ token: z.string().max(100), password: passwordSchema })
+              .parse(await body(req))
+            user = await confirmPasswordReset(data.token, data.password)
+          } else {
+            const data = z
+              .object({
+                token: z.string().max(100),
+                disablePassword: z.boolean().default(false),
+              })
+              .parse(await body(req))
+            user = await confirmEmailSignIn(data.token, data.disablePassword)
+          }
+          if (!user)
+            throw new HttpError(
+              400,
+              'This link is invalid, expired, or already used. Request a new one.',
+            )
+          await createSession(user.id)
+          return ok(user)
+        }
       }
     }
 

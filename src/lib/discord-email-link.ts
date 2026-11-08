@@ -2,14 +2,14 @@ import 'server-only'
 import { sql } from '@/lib/db'
 import { hashToken, token } from '@/lib/crypto'
 import { appOrigin, DiscordError, type DiscordProfile } from '@/lib/discord'
+import {
+  consumeEmailQuota,
+  LINK_TOKEN as TOKEN,
+  plainText as plain,
+} from '@/lib/email-links'
 import { sendEmail } from '@/lib/mail'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import type { User } from '@/lib/types'
-
-const TOKEN = /^[A-Za-z0-9_-]{43}$/
-// Provider names are user-controlled; keep them on one line in plain-text email.
-const plain = (value: string) =>
-  value.replace(/[\p{Cc}\p{Cf}\u2028\u2029]+/gu, ' ').trim()
 
 export async function requestDiscordEmailLink(
   userId: string,
@@ -22,7 +22,7 @@ export async function requestDiscordEmailLink(
   if (!user) throw new DiscordError('linked')
   if (
     !(await consumeRateLimit(`discord-link-email:${userId}`, 3, 3600)) ||
-    !(await consumeRateLimit('discord-link-email', 200, 3600))
+    !(await consumeEmailQuota())
   )
     throw new DiscordError('email_limit')
   const value = token()
@@ -103,7 +103,9 @@ export async function confirmDiscordEmailLink(
       await tx`SELECT id FROM users WHERE discord_id = ${request.discord_id}`
     if (target.discord_id || owner) throw new DiscordError('linked')
     const [user] = await tx<User[]>`
-      UPDATE users SET discord_id = ${request.discord_id} WHERE id = ${request.user_id}
+      UPDATE users SET discord_id = ${request.discord_id},
+        email_verified_at = coalesce(email_verified_at, now())
+      WHERE id = ${request.user_id}
       RETURNING id, name, email
     `
     // Whoever registered this unverified email may have set the password, so

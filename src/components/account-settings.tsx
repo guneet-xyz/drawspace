@@ -14,12 +14,14 @@ export function AccountSettings({
   discordEnabled,
   discordConnected,
   discordError,
+  emailEnabled = false,
 }: {
   user: User
   hasPassword: boolean
   discordEnabled: boolean
   discordConnected: boolean
   discordError?: string
+  emailEnabled?: boolean
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
@@ -141,8 +143,9 @@ export function AccountSettings({
         </section>
       ) : (
         <p className="mt-6 text-sm text-muted-foreground">
-          You sign in with Discord. Manage your password and account security on
-          Discord.
+          You sign in with Discord.
+          {emailEnabled &&
+            ' To add a password, sign out and use “Forgot password?” on the sign-in page.'}
         </p>
       )}
     </main>

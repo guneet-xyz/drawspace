@@ -16,12 +16,14 @@ export function AuthForm({
   discordEnabled = false,
   discordError,
   notice,
+  emailEnabled = false,
 }: {
   mode: 'login' | 'signup'
   registrationEnabled?: boolean
   discordEnabled?: boolean
   discordError?: string
   notice?: string
+  emailEnabled?: boolean
 }) {
   const signup = mode === 'signup'
   const router = useRouter()
@@ -146,9 +148,19 @@ export function AuthForm({
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
+                <div className="flex items-baseline justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </label>
+                  {!signup && emailEnabled && (
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
                 <Input
                   id="password"
                   name="password"
@@ -180,6 +192,11 @@ export function AuthForm({
                 {signup ? 'Create account' : 'Sign in'}
                 {!busy && <ArrowRight />}
               </Button>
+              {!signup && emailEnabled && (
+                <Button variant="ghost" asChild className="w-full">
+                  <Link href="/login/email">Email me a sign-in link</Link>
+                </Button>
+              )}
             </form>
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">

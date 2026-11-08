@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
+import { createServer } from 'node:http'
 
 const origin = process.env.E2E_BASE_URL || 'http://localhost:3000'
 const headers = { Origin: origin }
@@ -469,4 +470,114 @@ test('shared drawing opens as a read-only editor without signing in', async ({
     page.getByRole('button', { name: 'Share', exact: true }),
   ).toHaveCount(0)
   await owner.dispose()
+})
+
+test('forgot password and email sign-in links work end to end', async ({
+  page,
+  playwright,
+}) => {
+  await page.goto('/reset-password?token=invalid')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'invalid, expired',
+  )
+  await page.goto('/auth/email/confirm?token=invalid')
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'invalid, expired',
+  )
+  await page.goto('/login')
+  const forgot = page.getByRole('link', { name: 'Forgot password?' })
+  if (!(await forgot.count())) {
+    // Email delivery isn't configured for this server.
+    await expect(
+      page.getByRole('link', { name: 'Email me a sign-in link' }),
+    ).toHaveCount(0)
+    await page.goto('/forgot-password')
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(
+      'available on this instance',
+    )
+    return
+  }
+
+  // The server's SES endpoint (AWS_ENDPOINT_URL_SESV2) points at this fake.
+  const emails: string[] = []
+  const ses = createServer((req, res) => {
+    let body = ''
+    req.on('data', (chunk) => (body += chunk))
+    req.on('end', () => {
+      emails.push(JSON.parse(body).Content.Simple.Body.Text.Data)
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ MessageId: 'e2e' }))
+    })
+  })
+  await new Promise<void>((resolve) =>
+    ses.listen(
+      Number(process.env.E2E_FAKE_SES_PORT || 4599),
+      '127.0.0.1',
+      resolve,
+    ),
+  )
+  try {
+    const email = `email-links-${Date.now()}@example.com`
+    const api = await playwright.request.newContext({ baseURL: origin })
+    await register(api, 'Email Links', email)
+    const nextLink = async () => {
+      await expect
+        .poll(() => emails.length, { timeout: 20000 })
+        .toBeGreaterThan(0)
+      return emails.shift()!.match(/https?:\/\/\S+/)![0]
+    }
+
+    await forgot.click()
+    await expect(
+      page.getByRole('heading', { name: 'Forgot your password?' }),
+    ).toBeVisible()
+    await page.getByLabel('Email address').fill(email)
+    await page.getByRole('button', { name: 'Send reset link' }).click()
+    await expect(page.getByRole('status')).toContainText(
+      'If an account exists',
+      { timeout: 20000 },
+    )
+    await page.goto(await nextLink())
+    await page.getByLabel('New password').fill('a-reset-strong-password')
+    await page.getByRole('button', { name: 'Set password and sign in' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Your ideas live here' }),
+    ).toBeVisible()
+    expect(
+      (
+        await api.post('/api/auth/login', {
+          headers,
+          data: { email, password },
+        })
+      ).status(),
+    ).toBe(401)
+
+    await page.context().clearCookies()
+    await page.goto('/login')
+    await page.getByRole('link', { name: 'Email me a sign-in link' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Sign in with email' }),
+    ).toBeVisible()
+    await page.getByLabel('Email address').fill(email)
+    await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
+    await expect(page.getByRole('status')).toContainText(
+      'If an account exists',
+      { timeout: 20000 },
+    )
+    const link = await nextLink()
+    await page.goto(link)
+    // Already verified by the reset, so no first-verification options.
+    await expect(page.getByRole('checkbox')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Your ideas live here' }),
+    ).toBeVisible()
+    await page.goto(link)
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(
+      'invalid, expired',
+    )
+    await api.dispose()
+  } finally {
+    ses.close()
+  }
 })
