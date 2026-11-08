@@ -6,6 +6,13 @@
 
 - Add **Forgot password?** reset links and passwordless email sign-in links, and track verified email addresses ([#8](https://github.com/guneet-xyz/drawspace/issues/8)).
 
+## [0.4.0](https://github.com/guneet-xyz/drawspace/compare/v0.3.0...v0.4.0) (2026-11-08)
+
+
+### Features
+
+* add forgot-password and email sign-in links ([60b1e44](https://github.com/guneet-xyz/drawspace/commit/60b1e44cd885e551956fe0bdda91f9c966ba0403))
+
 ## [0.3.0](https://github.com/guneet-xyz/drawspace/compare/v0.2.0...v0.3.0) (2026-11-08)
 
 
