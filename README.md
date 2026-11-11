@@ -141,9 +141,8 @@ Published tags (version tags always use the `v` prefix of the Git tag):
 - `vX.Y.Z` (for example `v0.4.0`): exact release version.
 - `vX.Y`: latest patch in that minor line, and, from `1.0.0`, `vX`: latest release in that major line. These move only when the release is the latest stable GitHub release.
 - `latest`: latest stable GitHub release.
-- `sha-<12-character-commit>`: the exact release source revision.
 
-Every tag points to a multi-architecture index whose `linux/amd64` and `linux/arm64` images carry SBOM and provenance attestations (inspect them with `docker buildx imagetools inspect cr.guneet.dev/drawspace/drawspace:vX.Y.Z --format '{{json .Provenance}}'`, or `.SBOM`). Releases up to `v0.4.0` were published without attestations and also as unprefixed (`0.4.0`, `0.4`) and per-platform (`0.4.0-amd64`) tags; those tags remain in the registry, but later releases publish only the tags above.
+Every tag points to a multi-architecture index whose `linux/amd64` and `linux/arm64` images carry SBOM and provenance attestations (inspect them with `docker buildx imagetools inspect cr.guneet.dev/drawspace/drawspace:vX.Y.Z --format '{{json .Provenance}}'`, or `.SBOM`). The source commit is recorded in the image's `org.opencontainers.image.revision` label and provenance. Releases up to `v0.4.0` were published without attestations and also as unprefixed (`0.4.0`, `0.4`), per-platform (`0.4.0-amd64`), and `sha-<commit>` tags; those tags remain in the registry, but later releases publish only the tags above.
 
 ## CI/CD and automatic releases
 
@@ -156,12 +155,15 @@ The workflows in `.github/workflows/` use pinned action commit SHAs:
 
 Conventional commit examples:
 
-| Commit                                                           | Bump                      |
-| ---------------------------------------------------------------- | ------------------------- |
-| `fix: correct drawing autosave`                                  | Patch (`0.1.0` → `0.1.1`) |
-| `feat: add drawing history`                                      | Minor (`0.1.0` → `0.2.0`) |
-| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer | Major (`0.1.0` → `1.0.0`) |
-| `docs:`, `chore:`, or `ci:` without a breaking change            | No release on their own   |
+| Commit                                                                           | Bump                      |
+| -------------------------------------------------------------------------------- | ------------------------- |
+| `fix: correct drawing autosave`                                                  | Patch (`0.1.0` → `0.1.1`) |
+| `feat: add drawing history`                                                      | Minor (`0.1.0` → `0.2.0`) |
+| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer, before `1.0.0` | Minor (`0.1.0` → `0.2.0`) |
+| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer, from `1.0.0`   | Major (`1.2.0` → `2.0.0`) |
+| `docs:`, `chore:`, or `ci:` without a breaking change                            | No release on their own   |
+
+While Drawspace is on `0.x`, breaking changes bump the minor version (`bump-minor-pre-major`), so Release Please never releases `1.0.0` on its own. `1.0.0` is released deliberately with `release-as` (for example a `Release-As: 1.0.0` commit footer).
 
 Use conventional commit messages on the commits that land on `main` (including the squash-merge title). Release PRs remain manually mergeable; future releases are not auto-merged.
 
