@@ -155,12 +155,15 @@ The workflows in `.github/workflows/` use pinned action commit SHAs:
 
 Conventional commit examples:
 
-| Commit                                                           | Bump                      |
-| ---------------------------------------------------------------- | ------------------------- |
-| `fix: correct drawing autosave`                                  | Patch (`0.1.0` → `0.1.1`) |
-| `feat: add drawing history`                                      | Minor (`0.1.0` → `0.2.0`) |
-| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer | Major (`0.1.0` → `1.0.0`) |
-| `docs:`, `chore:`, or `ci:` without a breaking change            | No release on their own   |
+| Commit                                                                           | Bump                      |
+| -------------------------------------------------------------------------------- | ------------------------- |
+| `fix: correct drawing autosave`                                                  | Patch (`0.1.0` → `0.1.1`) |
+| `feat: add drawing history`                                                      | Minor (`0.1.0` → `0.2.0`) |
+| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer, before `1.0.0` | Minor (`0.1.0` → `0.2.0`) |
+| `feat!: change the workspace API` or a `BREAKING CHANGE:` footer, from `1.0.0`   | Major (`1.2.0` → `2.0.0`) |
+| `docs:`, `chore:`, or `ci:` without a breaking change                            | No release on their own   |
+
+While Drawspace is on `0.x`, breaking changes bump the minor version (`bump-minor-pre-major`), so Release Please never releases `1.0.0` on its own. `1.0.0` is released deliberately with `release-as` (for example a `Release-As: 1.0.0` commit footer).
 
 Use conventional commit messages on the commits that land on `main` (including the squash-merge title). Release PRs remain manually mergeable; future releases are not auto-merged.
 
