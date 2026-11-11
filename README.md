@@ -134,17 +134,16 @@ docker compose -f compose.yaml -f compose.release.yaml pull
 docker compose -f compose.yaml -f compose.release.yaml up -d
 ```
 
-Use the same `.env` configuration as the local-build deployment. The override removes `build`, keeps the PostgreSQL volume and health checks, and defaults to the version committed in `compose.release.yaml`. Back up the database before upgrading. Override the image with `DRAWSPACE_IMAGE=cr.guneet.dev/drawspace/drawspace:0.1.0` to select a particular release, or `:latest` to follow the latest stable release.
+Use the same `.env` configuration as the local-build deployment. The override removes `build`, keeps the PostgreSQL volume and health checks, and defaults to the version committed in `compose.release.yaml`. Back up the database before upgrading. Override the image with `DRAWSPACE_IMAGE=cr.guneet.dev/drawspace/drawspace:v0.4.0` to select a particular release, preferably pinned by digest (`:v0.4.0@sha256:…`). Moving tags such as `latest` and `v0.4` are convenient for trying Drawspace, but production deployments should pin an exact version.
 
-Published tags include:
+Published tags (version tags always use the `v` prefix of the Git tag):
 
-- `0.1.0` and `v0.1.0`: exact release version.
-- `0.1`: latest patch in that minor line, updated when that release is the latest stable release.
+- `vX.Y.Z` (for example `v0.4.0`): exact release version.
+- `vX.Y`: latest patch in that minor line, and, from `1.0.0`, `vX`: latest release in that major line. These move only when the release is the latest stable GitHub release.
 - `latest`: latest stable GitHub release.
 - `sha-<12-character-commit>`: the exact release source revision.
-- `0.1.0-amd64` / `0.1.0-arm64`: the individual tested platform images.
 
-Re-publishing an older release does not move `latest` or the minor-line alias backwards.
+Every tag points to a multi-architecture index whose `linux/amd64` and `linux/arm64` images carry SBOM and provenance attestations (inspect them with `docker buildx imagetools inspect cr.guneet.dev/drawspace/drawspace:vX.Y.Z --format '{{json .Provenance}}'`, or `.SBOM`). Releases up to `v0.4.0` were published without attestations and also as unprefixed (`0.4.0`, `0.4`) and per-platform (`0.4.0-amd64`) tags; those tags remain in the registry, but later releases publish only the tags above.
 
 ## CI/CD and automatic releases
 
@@ -153,7 +152,7 @@ The workflows in `.github/workflows/` use pinned action commit SHAs:
 1. **CI** runs formatting, lint, TypeScript, unit tests, production builds, migrations, and Playwright tests against a disposable PostgreSQL service on pushes to `main` and pull requests. It can also be dispatched manually or called by another workflow.
 2. **Release Please** analyzes conventional commits on `main`, maintains a release PR, and updates `package.json`, `CHANGELOG.md`, `.release-please-manifest.json`, and the default image version in `compose.release.yaml`. The first release is **`0.1.0`**; this initial-version setting does not pin later releases to the same version.
 3. **Merge the release PR** when ready. Release Please creates the `vX.Y.Z` tag and GitHub release, then calls the publishing workflow directly. This works with the built-in `GITHUB_TOKEN`; no personal access token is required.
-4. **Publish Docker image** checks the release tag/version, reruns CI on that exact commit, builds each platform on a native GitHub runner, starts each container against PostgreSQL to verify startup and migrations, pushes the tested platform images, and publishes/verifies the multi-architecture manifest.
+4. **Publish Docker image** (called only by Release Please; it has no manual trigger) checks the release tag/version and reruns CI on that exact commit. On a native GitHub runner per platform, it builds the image with SBOM and provenance attestations and pushes it **by digest only** (no tag). It then checks the attestations, pulls that exact digest, and starts it against PostgreSQL to verify startup, migrations, and health. Only after both platforms pass does it create the release tags from the tested digests with `docker buildx imagetools create` and verify the multi-architecture index.
 
 Conventional commit examples:
 
@@ -168,13 +167,13 @@ Use conventional commit messages on the commits that land on `main` (including t
 
 ### GitHub configuration
 
-In **Settings → Environments → `release`**, configure the environment secrets **`DOCKER_USERNAME`** and **`DOCKER_PASSWORD`**. Publishing jobs expose them as environment variables with the same names; using secrets ensures GitHub masks their values in logs. Only publishing jobs use this environment and these credentials. Credentials are not passed to Docker builds or exposed to pull-request CI.
+In **Settings → Environments → `release`**, configure the environment secrets **`DOCKER_USERNAME`** and **`DOCKER_PASSWORD`** (a registry key with pull + push on the `drawspace` project). Publishing jobs pass them only to the credential check and registry login steps; using secrets ensures GitHub masks their values in logs. Only publishing jobs use this environment and these credentials. Credentials are not passed to Docker builds or exposed to pull-request CI.
 
 The repository must allow GitHub Actions to create pull requests. The Release Please job requests `contents: write`, `issues: write`, `pull-requests: write`, and `actions: write` (for dispatching CI on the release PR). All other jobs use read-only GitHub permissions. Environment approvals, if configured, gate registry publication.
 
 GitHub does not run `pull_request` workflows for PRs created with `GITHUB_TOKEN`. Release Please explicitly dispatches CI on the bot PR's branch, which runs the checks on its actual commit without requiring a PAT. Similarly, Docker publication is a reusable job in the release workflow, not a separate tag event that GitHub would suppress.
 
-To retry a failed image publication, dispatch **Publish Docker image** in the Actions tab with the existing GitHub release tag (for example `v0.1.0`). This validates the tag and republishes the same released source, without creating or bumping another version. Publishing is serialized to avoid overlapping updates to release aliases.
+There is no manual publishing path: neither Release Please nor Publish Docker image can be dispatched by hand. If publication fails, fix the cause (for example the `release` environment secrets) and use **Re-run failed jobs** on the failed Release Please run. The re-run publishes the same release commit without creating or bumping another version; platforms that already passed reuse their tested digests, and no tag is created until every platform passes. Once a run can no longer be re-run, republishing an existing release requires a reviewed, one-off workflow change. Publishing is serialized to avoid overlapping updates to release aliases.
 
 ## Local development
 
