@@ -1,64 +1,64 @@
-import { test, expect, type APIRequestContext } from '@playwright/test'
-import { createServer } from 'node:http'
+import { createServer } from "node:http"
+import { expect, test, type APIRequestContext } from "@playwright/test"
 
-const origin = process.env.E2E_BASE_URL || 'http://localhost:3000'
+const origin = process.env.E2E_BASE_URL || "http://localhost:3000"
 const headers = { Origin: origin }
-const password = 'testing-a-strong-password'
+const password = "testing-a-strong-password"
 
-test('Discord login is opt-in, starts a full-page OAuth flow, and reports safe errors', async ({
+test("Discord login is opt-in, starts a full-page OAuth flow, and reports safe errors", async ({
   page,
 }) => {
-  await page.goto('/login?discord_error=denied')
-  await expect(page.getByRole('main').getByRole('alert')).toContainText(
-    'cancelled',
+  await page.goto("/login?discord_error=denied")
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "cancelled",
   )
-  const start = await page.request.get('/api/auth/discord', { maxRedirects: 0 })
+  const start = await page.request.get("/api/auth/discord", { maxRedirects: 0 })
   expect(start.status()).toBe(303)
   const target = new URL(start.headers().location)
-  const enabled = target.origin === 'https://discord.com'
+  const enabled = target.origin === "https://discord.com"
   await expect(
-    page.getByRole('button', { name: 'Continue with Discord' }),
+    page.getByRole("button", { name: "Continue with Discord" }),
   ).toHaveCount(enabled ? 1 : 0)
   if (enabled) {
-    expect(target.searchParams.get('redirect_uri')).toBe(
+    expect(target.searchParams.get("redirect_uri")).toBe(
       `${origin}/api/auth/discord/callback`,
     )
-    expect(target.searchParams.get('code_challenge_method')).toBe('S256')
-    expect(target.searchParams.has('client_secret')).toBe(false)
-    expect(start.headers()['cache-control']).toBe('no-store')
+    expect(target.searchParams.get("code_challenge_method")).toBe("S256")
+    expect(target.searchParams.has("client_secret")).toBe(false)
+    expect(start.headers()["cache-control"]).toBe("no-store")
     const invalid = await page.request.get(
-      '/api/auth/discord/callback?state=invalid&code=invalid',
+      "/api/auth/discord/callback?state=invalid&code=invalid",
       { maxRedirects: 0 },
     )
     expect(invalid.headers().location).toBe(
       `${origin}/login?discord_error=state`,
     )
     await page.goto(invalid.headers().location)
-    await expect(page.getByRole('main').getByRole('alert')).toContainText(
-      'expired',
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "expired",
     )
   } else {
-    expect(target.pathname).toBe('/login')
-    expect(target.searchParams.get('discord_error')).toBe('disabled')
+    expect(target.pathname).toBe("/login")
+    expect(target.searchParams.get("discord_error")).toBe("disabled")
   }
-  await page.goto('/signup')
+  await page.goto("/signup")
   await expect(
-    page.getByRole('button', { name: 'Continue with Discord' }),
+    page.getByRole("button", { name: "Continue with Discord" }),
   ).toHaveCount(enabled ? 1 : 0)
-  await page.goto('/login?discord_error=untrusted-provider-message')
-  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0)
-  await page.goto('/login?discord_email=sent')
-  await expect(page.getByRole('status')).toContainText('Check your email')
-  await page.goto('/auth/discord/confirm?token=invalid')
-  await expect(page.getByRole('main').getByRole('alert')).toContainText(
-    'invalid, expired',
+  await page.goto("/login?discord_error=untrusted-provider-message")
+  await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0)
+  await page.goto("/login?discord_email=sent")
+  await expect(page.getByRole("status")).toContainText("Check your email")
+  await page.goto("/auth/discord/confirm?token=invalid")
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "invalid, expired",
   )
   await expect(
-    page.getByRole('button', { name: 'Connect Discord' }),
+    page.getByRole("button", { name: "Connect Discord" }),
   ).toHaveCount(0)
-  const forged = await page.request.post('/api/auth/discord/confirm', {
-    headers: { Origin: 'https://attacker.example' },
-    form: { token: 'a'.repeat(43) },
+  const forged = await page.request.post("/api/auth/discord/confirm", {
+    headers: { Origin: "https://attacker.example" },
+    form: { token: "a".repeat(43) },
     maxRedirects: 0,
   })
   expect(forged.status()).toBe(403)
@@ -69,7 +69,7 @@ async function register(
   name: string,
   email: string,
 ) {
-  const response = await request.post('/api/auth/register', {
+  const response = await request.post("/api/auth/register", {
     headers,
     data: { name, email, password },
   })
@@ -77,7 +77,7 @@ async function register(
   return response.json()
 }
 
-test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocation', async ({
+test("accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocation", async ({
   playwright,
 }) => {
   const stamp = `${Date.now()}`
@@ -85,29 +85,29 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   const viewer = await playwright.request.newContext({ baseURL: origin })
   const outsider = await playwright.request.newContext({ baseURL: origin })
   const anonymous = await playwright.request.newContext({ baseURL: origin })
-  const ownerUser = await register(owner, 'Owner', `owner-${stamp}@example.com`)
+  const ownerUser = await register(owner, "Owner", `owner-${stamp}@example.com`)
   const viewerUser = await register(
     viewer,
-    'Viewer',
+    "Viewer",
     `viewer-${stamp}@example.com`,
   )
   const outsiderUser = await register(
     outsider,
-    'Outsider',
+    "Outsider",
     `outsider-${stamp}@example.com`,
   )
-  const [workspace] = await (await owner.get('/api/workspaces')).json()
+  const [workspace] = await (await owner.get("/api/workspaces")).json()
   expect(
     (
       await owner.post(`/api/workspaces/${workspace.id}/members`, {
         headers,
-        data: { email: viewerUser.email, role: 'viewer' },
+        data: { email: viewerUser.email, role: "viewer" },
       })
     ).status(),
   ).toBe(201)
-  const created = await owner.post('/api/drawings', {
+  const created = await owner.post("/api/drawings", {
     headers,
-    data: { workspaceId: workspace.id, title: 'Architecture sketch' },
+    data: { workspaceId: workspace.id, title: "Architecture sketch" },
   })
   const { id } = await created.json()
   expect(created.status()).toBe(201)
@@ -118,7 +118,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.patch(`/api/drawings/${id}`, {
         headers,
-        data: { version: 1, title: 'Nope' },
+        data: { version: 1, title: "Nope" },
       })
     ).status(),
   ).toBe(403)
@@ -136,26 +136,26 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   expect(
     (
       await owner.patch(`/api/drawings/${id}`, {
-        headers: { Origin: 'https://evil.example' },
-        data: { version: 1, title: 'CSRF' },
+        headers: { Origin: "https://evil.example" },
+        data: { version: 1, title: "CSRF" },
       })
     ).status(),
   ).toBe(403)
   const scene = {
     elements: [],
-    appState: { viewBackgroundColor: '#fff' },
+    appState: { viewBackgroundColor: "#fff" },
     files: {
       image: {
-        id: 'image',
-        mimeType: 'image/png',
-        dataURL: 'data:image/png;base64,aGVsbG8=',
+        id: "image",
+        mimeType: "image/png",
+        dataURL: "data:image/png;base64,aGVsbG8=",
         created: 1,
       },
     },
   }
   const saved = await owner.patch(`/api/drawings/${id}`, {
     headers,
-    data: { version: 1, title: 'Saved sketch', scene },
+    data: { version: 1, title: "Saved sketch", scene },
   })
   expect(saved.status()).toBe(200)
   expect((await saved.json()).version).toBe(2)
@@ -167,7 +167,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await owner.patch(`/api/drawings/${id}`, {
         headers,
-        data: { version: 1, title: 'Stale tab' },
+        data: { version: 1, title: "Stale tab" },
       })
     ).status(),
   ).toBe(409)
@@ -181,7 +181,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   const shareListing = await (
     await owner.get(`/api/drawings/${id}/shares`)
   ).json()
-  expect(shareListing[0]).not.toHaveProperty('token_hash')
+  expect(shareListing[0]).not.toHaveProperty("token_hash")
   expect(
     (
       await owner.delete(`/api/drawings/${id}/shares/${share.id}`, { headers })
@@ -192,7 +192,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await owner.patch(
         `/api/workspaces/${workspace.id}/members/${viewerUser.id}`,
-        { headers, data: { role: 'editor' } },
+        { headers, data: { role: "editor" } },
       )
     ).status(),
   ).toBe(200)
@@ -200,7 +200,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.patch(`/api/drawings/${id}`, {
         headers,
-        data: { version: 2, title: 'Editor works' },
+        data: { version: 2, title: "Editor works" },
       })
     ).status(),
   ).toBe(200)
@@ -221,7 +221,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await owner.patch(
         `/api/workspaces/${workspace.id}/members/${viewerUser.id}`,
-        { headers, data: { role: 'owner' } },
+        { headers, data: { role: "owner" } },
       )
     ).status(),
   ).toBe(400)
@@ -229,7 +229,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await owner.patch(
         `/api/workspaces/${workspace.id}/members/${viewerUser.id}`,
-        { headers, data: { role: 'admin' } },
+        { headers, data: { role: "admin" } },
       )
     ).status(),
   ).toBe(200)
@@ -237,7 +237,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.patch(
         `/api/workspaces/${workspace.id}/members/${viewerUser.id}`,
-        { headers, data: { role: 'viewer' } },
+        { headers, data: { role: "viewer" } },
       )
     ).status(),
   ).toBe(403)
@@ -253,7 +253,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.post(`/api/workspaces/${workspace.id}/members`, {
         headers,
-        data: { email: outsiderUser.email, role: 'admin' },
+        data: { email: outsiderUser.email, role: "admin" },
       })
     ).status(),
   ).toBe(403)
@@ -261,7 +261,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.post(`/api/workspaces/${workspace.id}/members`, {
         headers,
-        data: { email: outsiderUser.email, role: 'editor' },
+        data: { email: outsiderUser.email, role: "editor" },
       })
     ).status(),
   ).toBe(201)
@@ -269,7 +269,7 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
     (
       await viewer.patch(
         `/api/workspaces/${workspace.id}/members/${outsiderUser.id}`,
-        { headers, data: { role: 'viewer' } },
+        { headers, data: { role: "viewer" } },
       )
     ).status(),
   ).toBe(200)
@@ -283,20 +283,20 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   ).toBe(200)
   expect((await viewer.get(`/api/drawings/${id}`)).status()).toBe(404)
   expect(
-    (await owner.post('/api/auth/logout', { headers, data: {} })).status(),
+    (await owner.post("/api/auth/logout", { headers, data: {} })).status(),
   ).toBe(200)
-  expect((await owner.get('/api/workspaces')).status()).toBe(401)
+  expect((await owner.get("/api/workspaces")).status()).toBe(401)
   expect(
     (
-      await owner.post('/api/auth/login', {
+      await owner.post("/api/auth/login", {
         headers,
-        data: { email: ownerUser.email, password: 'incorrect-password' },
+        data: { email: ownerUser.email, password: "incorrect-password" },
       })
     ).status(),
   ).toBe(401)
   expect(
     (
-      await owner.post('/api/auth/login', {
+      await owner.post("/api/auth/login", {
         headers,
         data: { email: ownerUser.email, password },
       })
@@ -308,26 +308,26 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   })
   expect(
     (
-      await owner.patch('/api/account', {
+      await owner.patch("/api/account", {
         headers,
-        data: { name: 'Updated Owner' },
+        data: { name: "Updated Owner" },
       })
     ).status(),
   ).toBe(200)
-  const newPassword = 'a-different-strong-password'
+  const newPassword = "a-different-strong-password"
   expect(
     (
-      await owner.post('/api/account/password', {
+      await owner.post("/api/account/password", {
         headers,
         data: { currentPassword: password, password: newPassword },
       })
     ).status(),
   ).toBe(200)
-  expect((await oldSession.get('/api/workspaces')).status()).toBe(401)
-  expect((await owner.get('/api/workspaces')).status()).toBe(200)
+  expect((await oldSession.get("/api/workspaces")).status()).toBe(401)
+  expect((await owner.get("/api/workspaces")).status()).toBe(200)
   expect(
     (
-      await anonymous.post('/api/auth/login', {
+      await anonymous.post("/api/auth/login", {
         headers,
         data: { email: ownerUser.email, password: newPassword },
       })
@@ -342,57 +342,57 @@ test('accounts, tenant isolation, RBAC, saving, concurrency, sharing and revocat
   ])
 })
 
-test('signup UI and drawing editor save a renamed template', async ({
+test("signup UI and drawing editor save a renamed template", async ({
   page,
 }) => {
-  await page.goto('/signup')
-  await page.getByLabel('Your name', { exact: true }).fill('Creative Tester')
+  await page.goto("/signup")
+  await page.getByLabel("Your name", { exact: true }).fill("Creative Tester")
   await page
-    .getByLabel('Email address')
+    .getByLabel("Email address")
     .fill(`browser-${Date.now()}@example.com`)
-  await page.getByLabel('Password', { exact: true }).fill(password)
+  await page.getByLabel("Password", { exact: true }).fill(password)
   await page
-    .getByRole('button', { name: 'Create account', exact: true })
+    .getByRole("button", { name: "Create account", exact: true })
     .click()
   await expect(
-    page.getByRole('heading', { name: 'Your ideas live here' }),
+    page.getByRole("heading", { name: "Your ideas live here" }),
   ).toBeVisible()
-  await page.getByRole('button', { name: 'New drawing', exact: true }).click()
+  await page.getByRole("button", { name: "New drawing", exact: true }).click()
   await page
-    .getByLabel('Drawing name', { exact: true })
-    .fill('My browser sketch')
-  await page.getByRole('button', { name: 'Simple flow' }).click()
+    .getByLabel("Drawing name", { exact: true })
+    .fill("My browser sketch")
+  await page.getByRole("button", { name: "Simple flow" }).click()
   await page
-    .getByRole('button', { name: 'Create drawing', exact: true })
+    .getByRole("button", { name: "Create drawing", exact: true })
     .click()
-  await expect(page.locator('.excalidraw')).toBeVisible({ timeout: 60000 })
-  await page.getByLabel('Drawing title').fill('Renamed browser sketch')
-  await expect(page.getByRole('status')).toContainText('All changes saved', {
+  await expect(page.locator(".excalidraw")).toBeVisible({ timeout: 60000 })
+  await page.getByLabel("Drawing title").fill("Renamed browser sketch")
+  await expect(page.getByRole("status")).toContainText("All changes saved", {
     timeout: 30000,
   })
-  const drawingId = page.url().split('/').pop()
+  const drawingId = page.url().split("/").pop()
   const saved = await (
     await page.request.get(`/api/drawings/${drawingId}`)
   ).json()
   expect(saved.scene.elements.length).toBeGreaterThan(0)
   expect(saved.thumbnail).toMatch(/^data:image\/png;base64,/)
   await page.reload()
-  await expect(page.getByLabel('Drawing title')).toHaveValue(
-    'Renamed browser sketch',
+  await expect(page.getByLabel("Drawing title")).toHaveValue(
+    "Renamed browser sketch",
   )
-  await page.getByRole('button', { name: 'Back to drawings' }).click()
+  await page.getByRole("button", { name: "Back to drawings" }).click()
   await expect(
-    page.getByRole('link', { name: 'Renamed browser sketch', exact: true }),
+    page.getByRole("link", { name: "Renamed browser sketch", exact: true }),
   ).toBeVisible()
 })
 
-test('guest canvas persists locally without a session', async ({ page }) => {
-  await page.goto('/guest')
-  await expect(page.locator('.excalidraw')).toBeVisible({ timeout: 60000 })
-  await page.getByLabel('Drawing title').fill('A browser-only idea')
-  const canvas = page.locator('canvas.interactive')
+test("guest canvas persists locally without a session", async ({ page }) => {
+  await page.goto("/guest")
+  await expect(page.locator(".excalidraw")).toBeVisible({ timeout: 60000 })
+  await page.getByLabel("Drawing title").fill("A browser-only idea")
+  const canvas = page.locator("canvas.interactive")
   await canvas.click({ position: { x: 350, y: 180 } })
-  await page.keyboard.press('r')
+  await page.keyboard.press("r")
   const bounds = (await canvas.boundingBox())!
   await page.mouse.move(bounds.x + 350, bounds.y + 180)
   await page.mouse.down()
@@ -402,55 +402,55 @@ test('guest canvas persists locally without a session', async ({ page }) => {
     .poll(() =>
       page.evaluate(() =>
         JSON.parse(
-          localStorage.getItem('drawspace:guest') || '{}',
+          localStorage.getItem("drawspace:guest") || "{}",
         ).scene?.elements?.some(
-          (e: { type: string }) => e.type === 'rectangle',
+          (e: { type: string }) => e.type === "rectangle",
         ),
       ),
     )
     .toBe(true)
-  await expect(page.getByRole('status')).toContainText('Saved in browser')
+  await expect(page.getByRole("status")).toContainText("Saved in browser")
   await page.reload()
-  await expect(page.getByLabel('Drawing title')).toHaveValue(
-    'A browser-only idea',
+  await expect(page.getByLabel("Drawing title")).toHaveValue(
+    "A browser-only idea",
   )
   expect(
     (await page.context().cookies()).some(
-      (cookie) => cookie.name === 'drawspace_session',
+      (cookie) => cookie.name === "drawspace_session",
     ),
   ).toBe(false)
-  await page.getByRole('link', { name: 'Create account', exact: true }).click()
-  await page.getByLabel('Your name', { exact: true }).fill('Guest Importer')
+  await page.getByRole("link", { name: "Create account", exact: true }).click()
+  await page.getByLabel("Your name", { exact: true }).fill("Guest Importer")
   await page
-    .getByLabel('Email address')
+    .getByLabel("Email address")
     .fill(`guest-import-${Date.now()}@example.com`)
-  await page.getByLabel('Password', { exact: true }).fill(password)
+  await page.getByLabel("Password", { exact: true }).fill(password)
   await page
-    .getByRole('button', { name: 'Create account', exact: true })
+    .getByRole("button", { name: "Create account", exact: true })
     .click()
-  await page.getByRole('button', { name: 'Save guest sketch' }).click()
-  await expect(page.getByLabel('Drawing title')).toHaveValue(
-    'A browser-only idea',
+  await page.getByRole("button", { name: "Save guest sketch" }).click()
+  await expect(page.getByLabel("Drawing title")).toHaveValue(
+    "A browser-only idea",
   )
-  await expect(page.getByRole('status')).toContainText('All changes saved')
-  const id = page.url().split('/').pop()
+  await expect(page.getByRole("status")).toContainText("All changes saved")
+  const id = page.url().split("/").pop()
   const saved = await (await page.request.get(`/api/drawings/${id}`)).json()
   expect(
-    saved.scene.elements.some((e: { type: string }) => e.type === 'rectangle'),
+    saved.scene.elements.some((e: { type: string }) => e.type === "rectangle"),
   ).toBe(true)
 })
 
-test('shared drawing opens as a read-only editor without signing in', async ({
+test("shared drawing opens as a read-only editor without signing in", async ({
   page,
   playwright,
 }) => {
   const owner = await playwright.request.newContext({ baseURL: origin })
-  await register(owner, 'Sharing Tester', `sharing-${Date.now()}@example.com`)
-  const [workspace] = await (await owner.get('/api/workspaces')).json()
+  await register(owner, "Sharing Tester", `sharing-${Date.now()}@example.com`)
+  const [workspace] = await (await owner.get("/api/workspaces")).json()
   const { id } = await (
-    await owner.post('/api/drawings', {
+    await owner.post("/api/drawings", {
       headers,
-      data: { workspaceId: workspace.id, title: 'A public idea' },
+      data: { workspaceId: workspace.id, title: "A public idea" },
     })
   ).json()
   const share = await (
@@ -460,40 +460,40 @@ test('shared drawing opens as a read-only editor without signing in', async ({
     })
   ).json()
   await page.goto(share.url)
-  await expect(page.locator('.excalidraw')).toBeVisible()
-  await expect(page.getByText('View only', { exact: true })).toBeVisible()
+  await expect(page.locator(".excalidraw")).toBeVisible()
+  await expect(page.getByText("View only", { exact: true })).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: 'A public idea' }),
+    page.getByRole("heading", { name: "A public idea" }),
   ).toBeVisible()
-  await expect(page.getByLabel('Drawing title')).toHaveCount(0)
+  await expect(page.getByLabel("Drawing title")).toHaveCount(0)
   await expect(
-    page.getByRole('button', { name: 'Share', exact: true }),
+    page.getByRole("button", { name: "Share", exact: true }),
   ).toHaveCount(0)
   await owner.dispose()
 })
 
-test('forgot password and email sign-in links work end to end', async ({
+test("forgot password and email sign-in links work end to end", async ({
   page,
   playwright,
 }) => {
-  await page.goto('/reset-password?token=invalid')
-  await expect(page.getByRole('main').getByRole('alert')).toContainText(
-    'invalid, expired',
+  await page.goto("/reset-password?token=invalid")
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "invalid, expired",
   )
-  await page.goto('/auth/email/confirm?token=invalid')
-  await expect(page.getByRole('main').getByRole('alert')).toContainText(
-    'invalid, expired',
+  await page.goto("/auth/email/confirm?token=invalid")
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "invalid, expired",
   )
-  await page.goto('/login')
-  const forgot = page.getByRole('link', { name: 'Forgot password?' })
+  await page.goto("/login")
+  const forgot = page.getByRole("link", { name: "Forgot password?" })
   if (!(await forgot.count())) {
     // Email delivery isn't configured for this server.
     await expect(
-      page.getByRole('link', { name: 'Email me a sign-in link' }),
+      page.getByRole("link", { name: "Email me a sign-in link" }),
     ).toHaveCount(0)
-    await page.goto('/forgot-password')
-    await expect(page.getByRole('main').getByRole('alert')).toContainText(
-      'available on this instance',
+    await page.goto("/forgot-password")
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "available on this instance",
     )
     return
   }
@@ -501,25 +501,25 @@ test('forgot password and email sign-in links work end to end', async ({
   // The server's SES endpoint (AWS_ENDPOINT_URL_SESV2) points at this fake.
   const emails: string[] = []
   const ses = createServer((req, res) => {
-    let body = ''
-    req.on('data', (chunk) => (body += chunk))
-    req.on('end', () => {
+    let body = ""
+    req.on("data", (chunk) => (body += chunk))
+    req.on("end", () => {
       emails.push(JSON.parse(body).Content.Simple.Body.Text.Data)
-      res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ MessageId: 'e2e' }))
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(JSON.stringify({ MessageId: "e2e" }))
     })
   })
   await new Promise<void>((resolve) =>
     ses.listen(
       Number(process.env.E2E_FAKE_SES_PORT || 4599),
-      '127.0.0.1',
+      "127.0.0.1",
       resolve,
     ),
   )
   try {
     const email = `email-links-${Date.now()}@example.com`
     const api = await playwright.request.newContext({ baseURL: origin })
-    await register(api, 'Email Links', email)
+    await register(api, "Email Links", email)
     const nextLink = async () => {
       await expect
         .poll(() => emails.length, { timeout: 20000 })
@@ -529,23 +529,23 @@ test('forgot password and email sign-in links work end to end', async ({
 
     await forgot.click()
     await expect(
-      page.getByRole('heading', { name: 'Forgot your password?' }),
+      page.getByRole("heading", { name: "Forgot your password?" }),
     ).toBeVisible()
-    await page.getByLabel('Email address').fill(email)
-    await page.getByRole('button', { name: 'Send reset link' }).click()
-    await expect(page.getByRole('status')).toContainText(
-      'If an account exists',
+    await page.getByLabel("Email address").fill(email)
+    await page.getByRole("button", { name: "Send reset link" }).click()
+    await expect(page.getByRole("status")).toContainText(
+      "If an account exists",
       { timeout: 20000 },
     )
     await page.goto(await nextLink())
-    await page.getByLabel('New password').fill('a-reset-strong-password')
-    await page.getByRole('button', { name: 'Set password and sign in' }).click()
+    await page.getByLabel("New password").fill("a-reset-strong-password")
+    await page.getByRole("button", { name: "Set password and sign in" }).click()
     await expect(
-      page.getByRole('heading', { name: 'Your ideas live here' }),
+      page.getByRole("heading", { name: "Your ideas live here" }),
     ).toBeVisible()
     expect(
       (
-        await api.post('/api/auth/login', {
+        await api.post("/api/auth/login", {
           headers,
           data: { email, password },
         })
@@ -553,28 +553,28 @@ test('forgot password and email sign-in links work end to end', async ({
     ).toBe(401)
 
     await page.context().clearCookies()
-    await page.goto('/login')
-    await page.getByRole('link', { name: 'Email me a sign-in link' }).click()
+    await page.goto("/login")
+    await page.getByRole("link", { name: "Email me a sign-in link" }).click()
     await expect(
-      page.getByRole('heading', { name: 'Sign in with email' }),
+      page.getByRole("heading", { name: "Sign in with email" }),
     ).toBeVisible()
-    await page.getByLabel('Email address').fill(email)
-    await page.getByRole('button', { name: 'Email me a sign-in link' }).click()
-    await expect(page.getByRole('status')).toContainText(
-      'If an account exists',
+    await page.getByLabel("Email address").fill(email)
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click()
+    await expect(page.getByRole("status")).toContainText(
+      "If an account exists",
       { timeout: 20000 },
     )
     const link = await nextLink()
     await page.goto(link)
     // Already verified by the reset, so no first-verification options.
-    await expect(page.getByRole('checkbox')).toHaveCount(0)
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page.getByRole("checkbox")).toHaveCount(0)
+    await page.getByRole("button", { name: "Sign in", exact: true }).click()
     await expect(
-      page.getByRole('heading', { name: 'Your ideas live here' }),
+      page.getByRole("heading", { name: "Your ideas live here" }),
     ).toBeVisible()
     await page.goto(link)
-    await expect(page.getByRole('main').getByRole('alert')).toContainText(
-      'invalid, expired',
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "invalid, expired",
     )
     await api.dispose()
   } finally {

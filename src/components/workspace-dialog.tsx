@@ -1,12 +1,11 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { api, json } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { api, json } from "@/lib/api-client"
 
 export function WorkspaceDialog({
   open,
@@ -28,16 +29,16 @@ export function WorkspaceDialog({
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true)
-    const name = new FormData(event.currentTarget).get('name')
+    const name = new FormData(event.currentTarget).get("name")
     try {
-      const workspace = await api<{ id: string }>('/workspaces', {
-        method: 'POST',
+      const workspace = await api<{ id: string }>("/workspaces", {
+        method: "POST",
         body: json({ name }),
       })
       onOpenChange(false)
       router.push(`/app?w=${workspace.id}`)
       router.refresh()
-      toast.success('A fresh space for your ideas')
+      toast.success("A fresh space for your ideas")
     } catch (error) {
       toast.error((error as Error).message)
     } finally {

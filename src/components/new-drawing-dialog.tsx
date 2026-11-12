@@ -1,15 +1,12 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2, Check } from 'lucide-react'
-import { toast } from 'sonner'
-import { api, json } from '@/lib/api-client'
-import { makeTemplate } from '@/lib/templates'
-import { cn } from '@/lib/utils'
-import { IdeaPreview } from '@/components/idea-preview'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Check, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { IdeaPreview } from "@/components/idea-preview"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +14,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { api, json } from "@/lib/api-client"
+import { makeTemplate } from "@/lib/templates"
+import { cn } from "@/lib/utils"
 
 export function NewDrawingDialog({
   open,
@@ -28,17 +29,17 @@ export function NewDrawingDialog({
   onOpenChange: (open: boolean) => void
   workspaceId: string
 }) {
-  const [kind, setKind] = useState<'blank' | 'flow' | 'notes'>('blank')
+  const [kind, setKind] = useState<"blank" | "flow" | "notes">("blank")
   const [busy, setBusy] = useState(false)
   const router = useRouter()
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true)
-    const title = new FormData(event.currentTarget).get('title')
+    const title = new FormData(event.currentTarget).get("title")
     try {
       const scene = await makeTemplate(kind)
-      const drawing = await api<{ id: string }>('/drawings', {
-        method: 'POST',
+      const drawing = await api<{ id: string }>("/drawings", {
+        method: "POST",
         body: json({ workspaceId, title, scene }),
       })
       router.push(`/app/drawings/${drawing.id}`)
@@ -77,9 +78,9 @@ export function NewDrawingDialog({
             <div className="grid grid-cols-3 gap-3">
               {(
                 [
-                  { key: 'blank', label: 'Blank canvas' },
-                  { key: 'flow', label: 'Simple flow' },
-                  { key: 'notes', label: 'Brainstorm' },
+                  { key: "blank", label: "Blank canvas" },
+                  { key: "flow", label: "Simple flow" },
+                  { key: "notes", label: "Brainstorm" },
                 ] as const
               ).map(({ key, label }) => (
                 <button
@@ -88,10 +89,10 @@ export function NewDrawingDialog({
                   onClick={() => setKind(key)}
                   aria-pressed={kind === key}
                   className={cn(
-                    'relative overflow-hidden rounded-xl border text-left transition-colors',
+                    "relative overflow-hidden rounded-xl border text-left transition-colors",
                     kind === key
-                      ? 'border-primary bg-secondary/40 ring-1 ring-primary'
-                      : 'hover:bg-muted',
+                      ? "border-primary bg-secondary/40 ring-1 ring-primary"
+                      : "hover:bg-muted",
                   )}
                 >
                   <IdeaPreview kind={key} className="h-22 w-full" />
@@ -99,7 +100,7 @@ export function NewDrawingDialog({
                     {label}
                   </span>
                   {kind === key && (
-                    <Check className="absolute right-2 top-2 size-3.5 text-primary" />
+                    <Check className="absolute top-2 right-2 size-3.5 text-primary" />
                   )}
                 </button>
               ))}

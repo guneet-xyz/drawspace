@@ -1,12 +1,13 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
-import type { User } from '@/lib/types'
-import { api, json } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { api, json } from "@/lib/api-client"
+import type { User } from "@/lib/types"
 
 export function AccountSettings({
   user,
@@ -33,16 +34,16 @@ export function AccountSettings({
     setBusy(true)
     const form = event.currentTarget
     try {
-      await api(password ? '/account/password' : '/account', {
-        method: password ? 'POST' : 'PATCH',
+      await api(password ? "/account/password" : "/account", {
+        method: password ? "POST" : "PATCH",
         body: json(Object.fromEntries(new FormData(form))),
       })
       if (password) form.reset()
       router.refresh()
       toast.success(
         password
-          ? 'Password changed. Other sessions have been signed out.'
-          : 'Profile updated',
+          ? "Password changed. Other sessions have been signed out."
+          : "Profile updated",
       )
     } catch (error) {
       toast.error((error as Error).message)
@@ -88,8 +89,8 @@ export function AccountSettings({
           <h2 className="mb-1 text-sm font-semibold">Discord</h2>
           <p className="mb-5 text-xs text-muted-foreground">
             {discordConnected
-              ? 'Your Discord account is connected. You can use it to sign in.'
-              : 'Connect your Discord account to sign in without your password.'}
+              ? "Your Discord account is connected. You can use it to sign in."
+              : "Connect your Discord account to sign in without your password."}
           </p>
           {discordError && (
             <p role="alert" className="mb-5 text-sm text-destructive">
@@ -145,7 +146,7 @@ export function AccountSettings({
         <p className="mt-6 text-sm text-muted-foreground">
           You sign in with Discord.
           {emailEnabled &&
-            ' To add a password, sign out and use “Forgot password?” on the sign-in page.'}
+            " To add a password, sign out and use “Forgot password?” on the sign-in page."}
         </p>
       )}
     </main>

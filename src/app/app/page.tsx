@@ -1,9 +1,9 @@
-import { requireUser } from '@/lib/auth'
-import { getDrawings, getWorkspaces } from '@/lib/data'
-import { AppShell } from '@/components/app-shell'
-import { Dashboard } from '@/components/dashboard'
+import { AppShell } from "@/components/app-shell"
+import { Dashboard } from "@/components/dashboard"
+import { requireUser } from "@/lib/auth"
+import { getDrawings, getWorkspaces } from "@/lib/data"
 
-export const metadata = { title: 'Your drawings' }
+export const metadata = { title: "Your drawings" }
 export default async function AppPage({
   searchParams,
 }: {
@@ -14,7 +14,7 @@ export default async function AppPage({
   const workspaces = await getWorkspaces(user.id)
   const workspace = workspaces.find((w) => w.id === params.w) ?? workspaces[0]
   const drawings = workspace ? await getDrawings(workspace.id, user.id) : []
-  const favorites = params.filter === 'favorites'
+  const favorites = params.filter === "favorites"
   return (
     <AppShell
       user={user}

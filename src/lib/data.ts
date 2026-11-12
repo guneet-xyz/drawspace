@@ -1,13 +1,14 @@
-import 'server-only'
-import { sql } from '@/lib/db'
-import { hashToken } from '@/lib/crypto'
+import "server-only"
+
+import { hashToken } from "@/lib/crypto"
+import { sql } from "@/lib/db"
 import type {
   Drawing,
   DrawingDocument,
   Member,
   User,
   Workspace,
-} from '@/lib/types'
+} from "@/lib/types"
 
 export async function getWorkspaces(userId: string) {
   return sql<Workspace[]>`
@@ -52,7 +53,7 @@ export async function getMembers(workspaceId: string) {
 export async function getSharedDrawing(value: string) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(value)) return null
   const [drawing] = await sql<
-    (Pick<DrawingDocument, 'id' | 'title' | 'scene' | 'version'> & {
+    (Pick<DrawingDocument, "id" | "title" | "scene" | "version"> & {
       owner_name: string
     })[]
   >`

@@ -1,8 +1,5 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
 import {
   ArrowUpRight,
   Check,
@@ -16,28 +13,32 @@ import {
   Settings,
   Star,
   Users,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import type { User, Workspace } from '@/lib/types'
-import { api, json } from '@/lib/api-client'
-import { cn, initials } from '@/lib/utils'
-import { Logo } from '@/components/logo'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+} from "lucide-react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { Logo } from "@/components/logo"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { WorkspaceDialog } from '@/components/workspace-dialog'
+} from "@/components/ui/dropdown-menu"
+import { WorkspaceDialog } from "@/components/workspace-dialog"
+import { api, json } from "@/lib/api-client"
+import type { User, Workspace } from "@/lib/types"
+import { cn, initials } from "@/lib/utils"
 
 export function AppShell({
   user,
@@ -56,35 +57,35 @@ export function AppShell({
   const router = useRouter()
   const [createOpen, setCreateOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const base = workspace ? `/app?w=${workspace.id}` : '/app'
+  const base = workspace ? `/app?w=${workspace.id}` : "/app"
   const nav = [
     {
-      label: 'All drawings',
+      label: "All drawings",
       icon: LayoutGrid,
       href: base,
-      active: path === '/app' && !favorites,
+      active: path === "/app" && !favorites,
     },
     {
-      label: 'Favorites',
+      label: "Favorites",
       icon: Star,
-      href: `${base}${base.includes('?') ? '&' : '?'}filter=favorites`,
-      active: path === '/app' && favorites,
+      href: `${base}${base.includes("?") ? "&" : "?"}filter=favorites`,
+      active: path === "/app" && favorites,
     },
     ...(workspace
       ? [
           {
-            label: 'Members & settings',
+            label: "Members & settings",
             icon: Users,
             href: `/app/workspaces/${workspace.id}/members`,
-            active: path.includes('/members'),
+            active: path.includes("/members"),
           },
         ]
       : []),
   ]
   async function logout() {
     try {
-      await api('/auth/logout', { method: 'POST', body: json({}) })
-      router.push('/')
+      await api("/auth/logout", { method: "POST", body: json({}) })
+      router.push("/")
       router.refresh()
     } catch (error) {
       toast.error((error as Error).message)
@@ -106,12 +107,12 @@ export function AppShell({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-semibold">
-                  {workspace?.name ?? 'Choose a workspace'}
+                  {workspace?.name ?? "Choose a workspace"}
                 </span>
                 <span className="mt-1 block text-[10px] text-muted-foreground">
                   {workspace
-                    ? `${workspace.member_count} ${workspace.member_count === 1 ? 'member' : 'members'} · ${workspace.role}`
-                    : 'Create your first space'}
+                    ? `${workspace.member_count} ${workspace.member_count === 1 ? "member" : "members"} · ${workspace.role}`
+                    : "Create your first space"}
                 </span>
               </span>
               <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -148,8 +149,8 @@ export function AppShell({
               href={href}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                active && 'bg-[#eeebfa] font-medium text-primary',
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                active && "bg-[#eeebfa] font-medium text-primary",
               )}
             >
               <Icon className="size-4" />
@@ -180,8 +181,8 @@ export function AppShell({
               >
                 <span
                   className={cn(
-                    'size-2 rounded-[3px]',
-                    ['bg-[#a699dc]', 'bg-[#7cb6a4]', 'bg-[#dfb374]'][i % 3],
+                    "size-2 rounded-[3px]",
+                    ["bg-[#a699dc]", "bg-[#7cb6a4]", "bg-[#dfb374]"][i % 3],
                   )}
                 />
                 <span className="truncate">{w.name}</span>
@@ -221,7 +222,7 @@ export function AppShell({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onSelect={() => router.push('/app/settings')}>
+              <DropdownMenuItem onSelect={() => router.push("/app/settings")}>
                 <Settings />
                 Account settings
               </DropdownMenuItem>
@@ -256,7 +257,7 @@ export function AppShell({
             <span className="text-xs text-muted-foreground">Workspace</span>
             <span className="text-xs text-border">/</span>
             <span className="truncate text-xs font-medium">
-              {workspace?.name ?? 'Account'}
+              {workspace?.name ?? "Account"}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -273,7 +274,7 @@ export function AppShell({
       </div>
       <WorkspaceDialog open={createOpen} onOpenChange={setCreateOpen} />
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
-        <DialogContent className="inset-y-0 left-0 top-0 h-dvh w-72 max-w-none translate-x-0 translate-y-0 rounded-none p-0">
+        <DialogContent className="inset-y-0 top-0 left-0 h-dvh w-72 max-w-none translate-x-0 translate-y-0 rounded-none p-0">
           <DialogTitle className="sr-only">Navigation</DialogTitle>
           <DialogDescription className="sr-only">
             Workspaces and account navigation

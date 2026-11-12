@@ -1,18 +1,19 @@
-'use client'
+"use client"
 
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
-import { api, json } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { api, json } from "@/lib/api-client"
 
 function useSubmit(action: (form: FormData) => Promise<void>) {
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError('')
+    setError("")
     setBusy(true)
     try {
       await action(new FormData(event.currentTarget))
@@ -42,14 +43,14 @@ export function EmailLinkRequest({
   minutes,
   submitLabel,
 }: {
-  endpoint: '/auth/password-reset' | '/auth/email-sign-in'
+  endpoint: "/auth/password-reset" | "/auth/email-sign-in"
   minutes: number
   submitLabel: string
 }) {
-  const [sentTo, setSentTo] = useState('')
+  const [sentTo, setSentTo] = useState("")
   const { busy, error, onSubmit } = useSubmit(async (form) => {
-    const email = String(form.get('email'))
-    await api(endpoint, { method: 'POST', body: json({ email }) })
+    const email = String(form.get("email"))
+    await api(endpoint, { method: "POST", body: json({ email }) })
     setSentTo(email)
   })
   if (sentTo)
@@ -85,16 +86,16 @@ export function EmailLinkRequest({
 }
 
 function finish(router: ReturnType<typeof useRouter>) {
-  router.push('/app')
+  router.push("/app")
   router.refresh()
 }
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter()
   const { busy, error, onSubmit } = useSubmit(async (form) => {
-    await api('/auth/password-reset/confirm', {
-      method: 'POST',
-      body: json({ token, password: form.get('password') }),
+    await api("/auth/password-reset/confirm", {
+      method: "POST",
+      body: json({ token, password: form.get("password") }),
     })
     finish(router)
   })
@@ -138,11 +139,11 @@ export function EmailSignInConfirm({
 }) {
   const router = useRouter()
   const { busy, error, onSubmit } = useSubmit(async (form) => {
-    await api('/auth/email-sign-in/confirm', {
-      method: 'POST',
+    await api("/auth/email-sign-in/confirm", {
+      method: "POST",
       body: json({
         token,
-        disablePassword: form.get('disablePassword') === 'on',
+        disablePassword: form.get("disablePassword") === "on",
       }),
     })
     finish(router)

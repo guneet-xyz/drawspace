@@ -1,9 +1,9 @@
-import { AuthCard, InvalidLink } from '@/components/auth-card'
-import { EmailSignInConfirm } from '@/components/email-auth-forms'
-import { getEmailLink } from '@/lib/email-auth'
+import { AuthCard, InvalidLink } from "@/components/auth-card"
+import { EmailSignInConfirm } from "@/components/email-auth-forms"
+import { getEmailLink } from "@/lib/email-auth"
 
-export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Sign in', referrer: 'no-referrer' }
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Sign in", referrer: "no-referrer" }
 
 // Opening the link only renders this page; signing in needs the button, so
 // email link scanners can't consume it.
@@ -13,7 +13,7 @@ export default async function ConfirmEmailSignIn({
   searchParams: Promise<{ token?: string }>
 }) {
   const { token } = await searchParams
-  const link = await getEmailLink('sign_in', token)
+  const link = await getEmailLink("sign_in", token)
   return (
     <AuthCard
       title="Sign in to Drawspace"

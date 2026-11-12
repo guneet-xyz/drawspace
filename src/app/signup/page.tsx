@@ -1,15 +1,16 @@
-import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/auth'
-import { AuthForm } from '@/components/auth-form'
-import { discordEnabled } from '@/lib/discord'
+import { redirect } from "next/navigation"
 
-export const metadata = { title: 'Create an account' }
+import { AuthForm } from "@/components/auth-form"
+import { getUser } from "@/lib/auth"
+import { discordEnabled } from "@/lib/discord"
+
+export const metadata = { title: "Create an account" }
 export default async function Signup() {
-  if (await getUser()) redirect('/app')
+  if (await getUser()) redirect("/app")
   return (
     <AuthForm
       mode="signup"
-      registrationEnabled={process.env.ALLOW_REGISTRATION !== 'false'}
+      registrationEnabled={process.env.ALLOW_REGISTRATION !== "false"}
       discordEnabled={discordEnabled()}
     />
   )

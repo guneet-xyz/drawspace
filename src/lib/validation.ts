@@ -1,10 +1,10 @@
-import { z } from 'zod'
+import { z } from "zod"
 
 export const idSchema = z.uuid()
 export const nameSchema = z
   .string()
   .trim()
-  .min(1, 'Please enter a name')
+  .min(1, "Please enter a name")
   .max(80)
 export const titleSchema = z.string().trim().min(1).max(160)
 export const emailSchema = z
@@ -13,21 +13,21 @@ export const emailSchema = z
   .transform((value) => value.toLowerCase())
 export const passwordSchema = z
   .string()
-  .min(10, 'Use at least 10 characters')
+  .min(10, "Use at least 10 characters")
   .max(128)
-export const roleSchema = z.enum(['admin', 'editor', 'viewer'])
+export const roleSchema = z.enum(["admin", "editor", "viewer"])
 const binaryFileSchema = z.object({
   id: z.string().min(1).max(100),
   mimeType: z.enum([
-    'image/png',
-    'image/jpeg',
-    'image/gif',
-    'image/webp',
-    'image/svg+xml',
-    'image/avif',
-    'image/bmp',
-    'image/x-icon',
-    'application/octet-stream',
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    "image/svg+xml",
+    "image/avif",
+    "image/bmp",
+    "image/x-icon",
+    "application/octet-stream",
   ]),
   // Reject remote image URLs so shared drawings cannot embed tracking requests.
   dataURL: z

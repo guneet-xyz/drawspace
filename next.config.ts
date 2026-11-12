@@ -1,22 +1,22 @@
-import type { NextConfig } from 'next'
+import type { NextConfig } from "next"
 
 const config: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
   poweredByHeader: false,
   // The Dockerfile also copies this package explicitly for the ESM migration runner.
-  serverExternalPackages: ['postgres'],
-  experimental: { serverActions: { bodySizeLimit: '16mb' } },
+  serverExternalPackages: ["postgres"],
+  experimental: { serverActions: { bodySizeLimit: "16mb" } },
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "no-referrer" },
           {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
           },
         ],
       },

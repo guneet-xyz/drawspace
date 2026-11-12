@@ -26,11 +26,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_TELEMETRY_DISABLED: "1"
       DATABASE_URL: postgres://drawspace:ci-password@localhost:5432/drawspace
       APP_URL: http://localhost:3000
-      COOKIE_SECURE: 'false'
-      ALLOW_REGISTRATION: 'true'
+      COOKIE_SECURE: "false"
+      ALLOW_REGISTRATION: "true"
       DISCORD_CLIENT_ID: ci-discord-client-id
       DISCORD_CLIENT_SECRET: ci-discord-client-secret
       # Browser tests answer SES calls with a local fake; no real email is sent.
@@ -39,7 +39,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ci-test-only
       AWS_SECRET_ACCESS_KEY: ci-test-only
       AWS_ENDPOINT_URL_SESV2: http://127.0.0.1:4599
-      AWS_EC2_METADATA_DISABLED: 'true'
+      AWS_EC2_METADATA_DISABLED: "true"
     services:
       postgres:
         image: postgres:17-bookworm
@@ -65,7 +65,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

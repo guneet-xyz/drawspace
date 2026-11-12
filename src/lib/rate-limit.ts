@@ -1,5 +1,6 @@
-import 'server-only'
-import { sql } from '@/lib/db'
+import "server-only"
+
+import { sql } from "@/lib/db"
 
 /** Counts an attempt and returns false once `max` attempts occur in the window. */
 export async function consumeRateLimit(

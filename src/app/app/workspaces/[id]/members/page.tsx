@@ -1,10 +1,11 @@
-import { notFound } from 'next/navigation'
-import { requireUser } from '@/lib/auth'
-import { getMembers, getWorkspaces } from '@/lib/data'
-import { AppShell } from '@/components/app-shell'
-import { MembersPanel } from '@/components/members-panel'
+import { notFound } from "next/navigation"
 
-export const metadata = { title: 'Members & settings' }
+import { AppShell } from "@/components/app-shell"
+import { MembersPanel } from "@/components/members-panel"
+import { requireUser } from "@/lib/auth"
+import { getMembers, getWorkspaces } from "@/lib/data"
+
+export const metadata = { title: "Members & settings" }
 export default async function MembersPage({
   params,
 }: {

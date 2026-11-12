@@ -1,7 +1,5 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
   Check,
   Copy,
@@ -10,26 +8,29 @@ import {
   LockKeyhole,
   Trash2,
   Users,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import type { Share } from '@/lib/types'
-import { api, json } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select"
+import { api, json } from "@/lib/api-client"
+import type { Share } from "@/lib/types"
 
 export function ShareDialog({
   open,
@@ -43,8 +44,8 @@ export function ShareDialog({
   workspaceId: string
 }) {
   const [shares, setShares] = useState<Share[]>([])
-  const [url, setUrl] = useState('')
-  const [expiry, setExpiry] = useState('7')
+  const [url, setUrl] = useState("")
+  const [expiry, setExpiry] = useState("7")
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -69,16 +70,16 @@ export function ShareDialog({
       const share = await api<Share & { url: string }>(
         `/drawings/${drawingId}/shares`,
         {
-          method: 'POST',
+          method: "POST",
           body: json({
-            expiresInDays: expiry === 'never' ? null : Number(expiry),
+            expiresInDays: expiry === "never" ? null : Number(expiry),
           }),
         },
       )
       setShares((value) => [share, ...value])
       setUrl(share.url)
       setCopied(false)
-      toast.success('Share link created')
+      toast.success("Share link created")
     } catch (error) {
       toast.error((error as Error).message)
     } finally {
@@ -89,17 +90,17 @@ export function ShareDialog({
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      toast.success('Link copied')
+      toast.success("Link copied")
     } catch {
-      toast.error('Could not copy. Select the link and copy it manually.')
+      toast.error("Could not copy. Select the link and copy it manually.")
     }
   }
   async function revoke(id: string) {
     try {
-      await api(`/drawings/${drawingId}/shares/${id}`, { method: 'DELETE' })
+      await api(`/drawings/${drawingId}/shares/${id}`, { method: "DELETE" })
       setShares((value) => value.filter((s) => s.id !== id))
-      setUrl('')
-      toast.success('Share link revoked')
+      setUrl("")
+      toast.success("Share link revoked")
     } catch (error) {
       toast.error((error as Error).message)
     }
@@ -190,7 +191,7 @@ export function ShareDialog({
                     <p className="mt-1 text-muted-foreground">
                       {share.expires_at
                         ? `Expires ${new Date(share.expires_at).toLocaleDateString()}`
-                        : 'No expiration'}{' '}
+                        : "No expiration"}{" "}
                       · View only
                     </p>
                   </div>

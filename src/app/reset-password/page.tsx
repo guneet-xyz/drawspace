@@ -1,11 +1,11 @@
-import { AuthCard, InvalidLink } from '@/components/auth-card'
-import { ResetPasswordForm } from '@/components/email-auth-forms'
-import { getEmailLink } from '@/lib/email-auth'
+import { AuthCard, InvalidLink } from "@/components/auth-card"
+import { ResetPasswordForm } from "@/components/email-auth-forms"
+import { getEmailLink } from "@/lib/email-auth"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 export const metadata = {
-  title: 'Choose a new password',
-  referrer: 'no-referrer',
+  title: "Choose a new password",
+  referrer: "no-referrer",
 }
 
 export default async function ResetPassword({
@@ -14,7 +14,7 @@ export default async function ResetPassword({
   searchParams: Promise<{ token?: string }>
 }) {
   const { token } = await searchParams
-  const link = await getEmailLink('password_reset', token)
+  const link = await getEmailLink("password_reset", token)
   return (
     <AuthCard
       title="Choose a new password"

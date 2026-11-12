@@ -1,11 +1,11 @@
 export function IdeaPreview({
-  kind = 'flow',
-  className = '',
+  kind = "flow",
+  className = "",
 }: {
-  kind?: 'flow' | 'notes' | 'blank'
+  kind?: "flow" | "notes" | "blank"
   className?: string
 }) {
-  if (kind === 'blank')
+  if (kind === "blank")
     return (
       <svg viewBox="0 0 480 280" className={className} aria-hidden="true">
         <rect
@@ -27,7 +27,7 @@ export function IdeaPreview({
         />
       </svg>
     )
-  if (kind === 'notes')
+  if (kind === "notes")
     return (
       <svg
         viewBox="0 0 480 280"
