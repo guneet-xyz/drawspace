@@ -1,9 +1,6 @@
-'use client'
+"use client"
 
 /* eslint-disable @next/next/no-img-element -- stored canvas PNGs are data URLs */
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import {
   ArrowDownWideNarrow,
   ArrowUpRight,
@@ -20,20 +17,17 @@ import {
   Star,
   Trash2,
   Users,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import type { Drawing, User, Workspace } from '@/lib/types'
-import { api, json } from '@/lib/api-client'
-import { canEdit } from '@/lib/permissions'
-import { cn, relativeTime } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { GuestImport } from "@/components/guest-import"
+import { IdeaPreview } from "@/components/idea-preview"
+import { NewDrawingDialog } from "@/components/new-drawing-dialog"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -41,12 +35,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-import { NewDrawingDialog } from '@/components/new-drawing-dialog'
-import { WorkspaceDialog } from '@/components/workspace-dialog'
-import { IdeaPreview } from '@/components/idea-preview'
-import { GuestImport } from '@/components/guest-import'
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { WorkspaceDialog } from "@/components/workspace-dialog"
+import { api, json } from "@/lib/api-client"
+import { canEdit } from "@/lib/permissions"
+import type { Drawing, User, Workspace } from "@/lib/types"
+import { cn, relativeTime } from "@/lib/utils"
 
 export function Dashboard({
   user,
@@ -60,9 +61,9 @@ export function Dashboard({
   favorites: boolean
 }) {
   const router = useRouter()
-  const [search, setSearch] = useState('')
-  const [view, setView] = useState<'grid' | 'list'>('grid')
-  const [sort, setSort] = useState<'recent' | 'name'>('recent')
+  const [search, setSearch] = useState("")
+  const [view, setView] = useState<"grid" | "list">("grid")
+  const [sort, setSort] = useState<"recent" | "name">("recent")
   const [newOpen, setNewOpen] = useState(false)
   const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const [deleting, setDeleting] = useState<Drawing | null>(null)
@@ -76,14 +77,14 @@ export function Dashboard({
         d.title.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) =>
-      sort === 'name'
+      sort === "name"
         ? a.title.localeCompare(b.title)
         : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
     )
   async function favorite(drawing: Drawing) {
     try {
       await api(`/drawings/${drawing.id}/favorite`, {
-        method: 'POST',
+        method: "POST",
         body: json({ favorite: !drawing.favorite }),
       })
       router.refresh()
@@ -95,9 +96,9 @@ export function Dashboard({
     try {
       const copy = await api<{ id: string }>(
         `/drawings/${drawing.id}/duplicate`,
-        { method: 'POST', body: json({}) },
+        { method: "POST", body: json({}) },
       )
-      toast.success('Drawing duplicated')
+      toast.success("Drawing duplicated")
       router.push(`/app/drawings/${copy.id}`)
     } catch (error) {
       toast.error((error as Error).message)
@@ -107,10 +108,10 @@ export function Dashboard({
     event.preventDefault()
     if (!renaming) return
     setBusy(true)
-    const title = new FormData(event.currentTarget).get('title')
+    const title = new FormData(event.currentTarget).get("title")
     try {
       await api(`/drawings/${renaming.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: json({ title, version: renaming.version }),
       })
       setRenaming(null)
@@ -137,7 +138,7 @@ export function Dashboard({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => favorite(drawing)}>
             <Star />
-            {drawing.favorite ? 'Remove from favorites' : 'Add to favorites'}
+            {drawing.favorite ? "Remove from favorites" : "Add to favorites"}
           </DropdownMenuItem>
           {editable && (
             <>
@@ -171,16 +172,16 @@ export function Dashboard({
         <div>
           <p className="mb-2 text-[12px] text-muted-foreground">
             {favorites
-              ? 'Keep the good ones close'
-              : `Hello, ${user.name.split(' ')[0]} ✨`}
+              ? "Keep the good ones close"
+              : `Hello, ${user.name.split(" ")[0]} ✨`}
           </p>
           <h1 className="text-[27px] font-semibold tracking-[-0.04em]">
-            {favorites ? 'Your favorites' : 'Your ideas live here'}
+            {favorites ? "Your favorites" : "Your ideas live here"}
           </h1>
           <p className="mt-2 text-[13px] text-muted-foreground">
             {favorites
-              ? 'A little collection of drawings you love.'
-              : 'A sketch, a plan, a spark of something. Make room for it.'}
+              ? "A little collection of drawings you love."
+              : "A sketch, a plan, a spark of something. Make room for it."}
           </p>
         </div>
         {editable && (
@@ -211,14 +212,14 @@ export function Dashboard({
               Let’s make something <ArrowUpRight className="size-3.5" />
             </button>
           </div>
-          <IdeaPreview className="absolute right-5 top-0 hidden h-full w-[330px] opacity-80 xl:block" />
+          <IdeaPreview className="absolute top-0 right-5 hidden h-full w-[330px] opacity-80 xl:block" />
         </section>
       )}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <FolderOpen className="size-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">
-            {favorites ? 'Favorite drawings' : 'All drawings'}
+            {favorites ? "Favorite drawings" : "All drawings"}
           </h2>
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {filtered.length}
@@ -226,7 +227,7 @@ export function Dashboard({
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-40 sm:w-52">
-            <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
+            <Search className="absolute top-2.5 left-3 size-3.5 text-muted-foreground" />
             <Input
               aria-label="Search drawings"
               placeholder="Search drawings..."
@@ -247,11 +248,11 @@ export function Dashboard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setSort('recent')}>
-                Recently updated {sort === 'recent' && '✓'}
+              <DropdownMenuItem onSelect={() => setSort("recent")}>
+                Recently updated {sort === "recent" && "✓"}
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setSort('name')}>
-                Name A–Z {sort === 'name' && '✓'}
+              <DropdownMenuItem onSelect={() => setSort("name")}>
+                Name A–Z {sort === "name" && "✓"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -260,12 +261,12 @@ export function Dashboard({
               size="icon"
               variant="ghost"
               className={cn(
-                'size-7',
-                view === 'grid' && 'bg-muted text-primary',
+                "size-7",
+                view === "grid" && "bg-muted text-primary",
               )}
               aria-label="Grid view"
-              aria-pressed={view === 'grid'}
-              onClick={() => setView('grid')}
+              aria-pressed={view === "grid"}
+              onClick={() => setView("grid")}
             >
               <LayoutGrid className="size-3.5" />
             </Button>
@@ -273,12 +274,12 @@ export function Dashboard({
               size="icon"
               variant="ghost"
               className={cn(
-                'size-7',
-                view === 'list' && 'bg-muted text-primary',
+                "size-7",
+                view === "list" && "bg-muted text-primary",
               )}
               aria-label="List view"
-              aria-pressed={view === 'list'}
-              onClick={() => setView('list')}
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
             >
               <List className="size-3.5" />
             </Button>
@@ -302,19 +303,19 @@ export function Dashboard({
           <IdeaPreview kind="blank" className="mx-auto h-36 w-60" />
           <h2 className="text-base font-medium">
             {search
-              ? 'No drawings found'
+              ? "No drawings found"
               : favorites
-                ? 'Your favorites are waiting'
-                : 'A fresh space, full of possibility'}
+                ? "Your favorites are waiting"
+                : "A fresh space, full of possibility"}
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
             {search
-              ? 'Try a different search or clear the filter.'
+              ? "Try a different search or clear the filter."
               : favorites
-                ? 'Star any drawing to keep it close. Your favorites will appear here.'
+                ? "Star any drawing to keep it close. Your favorites will appear here."
                 : editable
-                  ? 'Every great idea starts somewhere. Create your first drawing and make your mark.'
-                  : 'Drawings will appear here when your team creates them.'}
+                  ? "Every great idea starts somewhere. Create your first drawing and make your mark."
+                  : "Drawings will appear here when your team creates them."}
           </p>
           {!search && !favorites && editable && (
             <Button className="mt-5" onClick={() => setNewOpen(true)}>
@@ -326,7 +327,7 @@ export function Dashboard({
             <Button
               variant="outline"
               className="mt-5"
-              onClick={() => setSearch('')}
+              onClick={() => setSearch("")}
             >
               Clear search
             </Button>
@@ -335,13 +336,13 @@ export function Dashboard({
       ) : (
         <div
           className={
-            view === 'grid'
-              ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
-              : 'overflow-hidden rounded-xl border bg-white'
+            view === "grid"
+              ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+              : "overflow-hidden rounded-xl border bg-white"
           }
         >
           {filtered.map((drawing) =>
-            view === 'grid' ? (
+            view === "grid" ? (
               <article
                 key={drawing.id}
                 className="group overflow-hidden rounded-xl border bg-white transition-all hover:border-[#d4cdeb] hover:shadow-[0_5px_20px_-7px_#766a9a25]"
@@ -366,20 +367,20 @@ export function Dashboard({
                     onClick={() => favorite(drawing)}
                     aria-label={
                       drawing.favorite
-                        ? 'Remove from favorites'
-                        : 'Add to favorites'
+                        ? "Remove from favorites"
+                        : "Add to favorites"
                     }
                     className={cn(
-                      'absolute right-3 top-3 rounded-md border bg-white/90 p-1.5 shadow-xs transition-opacity focus:opacity-100',
+                      "absolute top-3 right-3 rounded-md border bg-white/90 p-1.5 shadow-xs transition-opacity focus:opacity-100",
                       drawing.favorite
-                        ? 'text-[#d8a74a]'
-                        : 'text-muted-foreground opacity-0 group-hover:opacity-100',
+                        ? "text-[#d8a74a]"
+                        : "text-muted-foreground opacity-0 group-hover:opacity-100",
                     )}
                   >
                     <Star
                       className={cn(
-                        'size-3.5',
-                        drawing.favorite && 'fill-current',
+                        "size-3.5",
+                        drawing.favorite && "fill-current",
                       )}
                     />
                   </button>
@@ -398,7 +399,7 @@ export function Dashboard({
                     <span>Edited {relativeTime(drawing.updated_at)}</span>
                     <span>·</span>
                     <span className="truncate">
-                      {drawing.creator_name ?? 'Workspace member'}
+                      {drawing.creator_name ?? "Workspace member"}
                     </span>
                   </p>
                 </div>
@@ -425,16 +426,16 @@ export function Dashboard({
                 <button
                   aria-label={
                     drawing.favorite
-                      ? 'Remove from favorites'
-                      : 'Add to favorites'
+                      ? "Remove from favorites"
+                      : "Add to favorites"
                   }
                   onClick={() => favorite(drawing)}
                   className="rounded p-2"
                 >
                   <Star
                     className={cn(
-                      'size-4 text-muted-foreground',
-                      drawing.favorite && 'fill-[#d8a74a] text-[#d8a74a]',
+                      "size-4 text-muted-foreground",
+                      drawing.favorite && "fill-[#d8a74a] text-[#d8a74a]",
                     )}
                   />
                 </button>
@@ -455,8 +456,8 @@ export function Dashboard({
             className="flex items-center gap-1.5 hover:text-primary"
           >
             <Users className="size-3.5" />
-            {workspace.member_count}{' '}
-            {workspace.member_count === 1 ? 'person' : 'people'} in this space{' '}
+            {workspace.member_count}{" "}
+            {workspace.member_count === 1 ? "person" : "people"} in this space{" "}
             <ArrowUpRight className="size-3" />
           </Link>
         )}
@@ -478,9 +479,9 @@ export function Dashboard({
         description={`“${deleting?.title}” and its share links will be permanently deleted. This cannot be undone.`}
         onConfirm={async () => {
           if (deleting) {
-            await api(`/drawings/${deleting.id}`, { method: 'DELETE' })
+            await api(`/drawings/${deleting.id}`, { method: "DELETE" })
             router.refresh()
-            toast.success('Drawing deleted')
+            toast.success("Drawing deleted")
           }
         }}
       />

@@ -1,15 +1,16 @@
-import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/auth'
-import { AuthCard } from '@/components/auth-card'
-import { EmailLinkRequest } from '@/components/email-auth-forms'
-import { LINK_MINUTES } from '@/lib/email-auth'
-import { mailEnabled } from '@/lib/mail'
+import { redirect } from "next/navigation"
 
-export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Sign in with email' }
+import { AuthCard } from "@/components/auth-card"
+import { EmailLinkRequest } from "@/components/email-auth-forms"
+import { getUser } from "@/lib/auth"
+import { LINK_MINUTES } from "@/lib/email-auth"
+import { mailEnabled } from "@/lib/mail"
+
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Sign in with email" }
 
 export default async function EmailSignIn() {
-  if (await getUser()) redirect('/app')
+  if (await getUser()) redirect("/app")
   return (
     <AuthCard
       title="Sign in with email"

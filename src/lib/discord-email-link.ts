@@ -1,15 +1,16 @@
-import 'server-only'
-import { sql } from '@/lib/db'
-import { hashToken, token } from '@/lib/crypto'
-import { appOrigin, DiscordError, type DiscordProfile } from '@/lib/discord'
+import "server-only"
+
+import { hashToken, token } from "@/lib/crypto"
+import { sql } from "@/lib/db"
+import { appOrigin, DiscordError, type DiscordProfile } from "@/lib/discord"
 import {
   consumeEmailQuota,
-  LINK_TOKEN as TOKEN,
   plainText as plain,
-} from '@/lib/email-links'
-import { sendEmail } from '@/lib/mail'
-import { consumeRateLimit } from '@/lib/rate-limit'
-import type { User } from '@/lib/types'
+  LINK_TOKEN as TOKEN,
+} from "@/lib/email-links"
+import { sendEmail } from "@/lib/mail"
+import { consumeRateLimit } from "@/lib/rate-limit"
+import type { User } from "@/lib/types"
 
 export async function requestDiscordEmailLink(
   userId: string,
@@ -19,15 +20,15 @@ export async function requestDiscordEmailLink(
     SELECT name, email FROM users
     WHERE id = ${userId} AND email = ${profile.email} AND discord_id IS NULL
   `
-  if (!user) throw new DiscordError('linked')
+  if (!user) throw new DiscordError("linked")
   if (
     !(await consumeRateLimit(`discord-link-email:${userId}`, 3, 3600)) ||
     !(await consumeEmailQuota())
   )
-    throw new DiscordError('email_limit')
+    throw new DiscordError("email_limit")
   const value = token()
   const discordName =
-    plain(profile.global_name || profile.username).slice(0, 80) || 'Discord'
+    plain(profile.global_name || profile.username).slice(0, 80) || "Discord"
   await sql.begin(async (tx) => {
     // Only the newest link for an account remains valid.
     await tx`DELETE FROM discord_link_requests WHERE user_id = ${userId} OR expires_at < now()`
@@ -39,24 +40,24 @@ export async function requestDiscordEmailLink(
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Connect Discord to your Drawspace account',
+      subject: "Connect Discord to your Drawspace account",
       text: [
         `Hi ${plain(user.name)},`,
-        '',
+        "",
         `Someone signed in to Drawspace with the Discord account "${discordName}", which uses this email address.`,
-        'To connect that Discord account to your existing Drawspace account, open this link within 30 minutes:',
-        '',
+        "To connect that Discord account to your existing Drawspace account, open this link within 30 minutes:",
+        "",
         `${appOrigin()}/auth/discord/confirm?token=${value}`,
-        '',
-        'Connecting signs out your other Drawspace sessions. Afterwards you can sign in with Discord.',
-        '',
+        "",
+        "Connecting signs out your other Drawspace sessions. Afterwards you can sign in with Discord.",
+        "",
         "If this wasn't you, ignore this email. Nothing will change.",
-      ].join('\n'),
+      ].join("\n"),
     })
   } catch {
     await sql`DELETE FROM discord_link_requests WHERE token_hash = ${hashToken(value)}`
     // Provider errors can include request metadata; never log them verbatim.
-    throw new DiscordError('email_failed')
+    throw new DiscordError("email_failed")
   }
 }
 
@@ -82,7 +83,7 @@ export async function confirmDiscordEmailLink(
   value: string,
   disablePassword: boolean,
 ): Promise<User> {
-  if (!TOKEN.test(value)) throw new DiscordError('link_expired')
+  if (!TOKEN.test(value)) throw new DiscordError("link_expired")
   // Consume first so a token can never be used twice, even if linking fails.
   const [request] = await sql<
     { user_id: string; discord_id: string; email: string }[]
@@ -91,17 +92,17 @@ export async function confirmDiscordEmailLink(
     WHERE token_hash = ${hashToken(value)} AND expires_at > now()
     RETURNING user_id, discord_id, email
   `
-  if (!request) throw new DiscordError('link_expired')
+  if (!request) throw new DiscordError("link_expired")
   return sql.begin(async (tx) => {
     await tx`SELECT pg_advisory_xact_lock(hashtextextended(${request.discord_id}, 0))`
     const [target] = await tx<{ email: string; discord_id: string | null }[]>`
       SELECT email, discord_id FROM users WHERE id = ${request.user_id} FOR UPDATE
     `
     if (!target || target.email !== request.email)
-      throw new DiscordError('link_expired')
+      throw new DiscordError("link_expired")
     const [owner] =
       await tx`SELECT id FROM users WHERE discord_id = ${request.discord_id}`
-    if (target.discord_id || owner) throw new DiscordError('linked')
+    if (target.discord_id || owner) throw new DiscordError("linked")
     const [user] = await tx<User[]>`
       UPDATE users SET discord_id = ${request.discord_id},
         email_verified_at = coalesce(email_verified_at, now())

@@ -1,10 +1,11 @@
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import Link from "next/link"
+
+import { cn } from "@/lib/utils"
 
 export function Logo({
   compact = false,
   className,
-  href = '/',
+  href = "/",
 }: {
   compact?: boolean
   className?: string
@@ -14,7 +15,7 @@ export function Logo({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center gap-2.5 font-semibold tracking-tight',
+        "inline-flex items-center gap-2.5 font-semibold tracking-tight",
         className,
       )}
       aria-label="Drawspace home"

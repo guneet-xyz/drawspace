@@ -1,14 +1,15 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { ArrowRight, Loader2, PencilLine } from 'lucide-react'
-import { api, json } from '@/lib/api-client'
-import { Logo } from '@/components/logo'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { IdeaPreview } from '@/components/idea-preview'
+import { ArrowRight, Loader2, PencilLine } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+
+import { IdeaPreview } from "@/components/idea-preview"
+import { Logo } from "@/components/logo"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { api, json } from "@/lib/api-client"
 
 export function AuthForm({
   mode,
@@ -18,28 +19,28 @@ export function AuthForm({
   notice,
   emailEnabled = false,
 }: {
-  mode: 'login' | 'signup'
+  mode: "login" | "signup"
   registrationEnabled?: boolean
   discordEnabled?: boolean
   discordError?: string
   notice?: string
   emailEnabled?: boolean
 }) {
-  const signup = mode === 'signup'
+  const signup = mode === "signup"
   const router = useRouter()
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError('')
+    setError("")
     setBusy(true)
     const form = new FormData(event.currentTarget)
     try {
-      await api(`/auth/${signup ? 'register' : 'login'}`, {
-        method: 'POST',
+      await api(`/auth/${signup ? "register" : "login"}`, {
+        method: "POST",
         body: json(Object.fromEntries(form)),
       })
-      router.push('/app')
+      router.push("/app")
       router.refresh()
     } catch (error) {
       setError((error as Error).message)
@@ -77,12 +78,12 @@ export function AuthForm({
             <PencilLine className="size-6 text-primary" />
           </span>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {signup ? 'Make room for your ideas' : 'Welcome back'}
+            {signup ? "Make room for your ideas" : "Welcome back"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {signup
-              ? 'Create an account. Your first workspace is on us.'
-              : 'Your next great idea is right where you left it.'}
+              ? "Create an account. Your first workspace is on us."
+              : "Your next great idea is right where you left it."}
           </p>
           {discordError && (
             <p
@@ -166,9 +167,9 @@ export function AuthForm({
                   name="password"
                   type="password"
                   placeholder={
-                    signup ? 'At least 10 characters' : 'Your password'
+                    signup ? "At least 10 characters" : "Your password"
                   }
-                  autoComplete={signup ? 'new-password' : 'current-password'}
+                  autoComplete={signup ? "new-password" : "current-password"}
                   minLength={signup ? 10 : 1}
                   maxLength={128}
                   required
@@ -189,7 +190,7 @@ export function AuthForm({
               )}
               <Button className="w-full" size="lg" disabled={busy}>
                 {busy ? <Loader2 className="animate-spin" /> : null}
-                {signup ? 'Create account' : 'Sign in'}
+                {signup ? "Create account" : "Sign in"}
                 {!busy && <ArrowRight />}
               </Button>
               {!signup && emailEnabled && (
@@ -200,12 +201,12 @@ export function AuthForm({
             </form>
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {signup ? 'Already have a space?' : 'New to Drawspace?'}{' '}
+            {signup ? "Already have a space?" : "New to Drawspace?"}{" "}
             <Link
-              href={signup ? '/login' : '/signup'}
+              href={signup ? "/login" : "/signup"}
               className="font-medium text-primary hover:underline"
             >
-              {signup ? 'Sign in' : 'Create an account'}
+              {signup ? "Sign in" : "Create an account"}
             </Link>
           </p>
           <div className="my-7 flex items-center gap-3 text-xs text-muted-foreground">

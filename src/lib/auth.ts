@@ -1,11 +1,13 @@
-import 'server-only'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { sql } from '@/lib/db'
-import { hashToken, token } from '@/lib/crypto'
-import type { User } from '@/lib/types'
+import "server-only"
 
-export const SESSION_COOKIE = 'drawspace_session'
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
+
+import { hashToken, token } from "@/lib/crypto"
+import { sql } from "@/lib/db"
+import type { User } from "@/lib/types"
+
+export const SESSION_COOKIE = "drawspace_session"
 
 export async function getUser(): Promise<User | null> {
   const value = (await cookies()).get(SESSION_COOKIE)?.value
@@ -19,7 +21,7 @@ export async function getUser(): Promise<User | null> {
 
 export async function requireUser() {
   const user = await getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect("/login")
   return user
 }
 
@@ -30,9 +32,9 @@ export async function createSession(userId: string) {
   await sql`DELETE FROM sessions WHERE expires_at < now()`
   ;(await cookies()).set(SESSION_COOKIE, value, {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true',
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.COOKIE_SECURE === "true",
+    sameSite: "lax",
+    path: "/",
     expires,
   })
 }

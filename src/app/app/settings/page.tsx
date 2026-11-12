@@ -1,13 +1,13 @@
-import { requireUser } from '@/lib/auth'
-import { getWorkspaces } from '@/lib/data'
-import { AppShell } from '@/components/app-shell'
-import { AccountSettings } from '@/components/account-settings'
-import { sql } from '@/lib/db'
-import { discordEnabled } from '@/lib/discord'
-import { discordErrorMessage } from '@/lib/discord-messages'
-import { mailEnabled } from '@/lib/mail'
+import { AccountSettings } from "@/components/account-settings"
+import { AppShell } from "@/components/app-shell"
+import { requireUser } from "@/lib/auth"
+import { getWorkspaces } from "@/lib/data"
+import { sql } from "@/lib/db"
+import { discordEnabled } from "@/lib/discord"
+import { discordErrorMessage } from "@/lib/discord-messages"
+import { mailEnabled } from "@/lib/mail"
 
-export const metadata = { title: 'Account settings' }
+export const metadata = { title: "Account settings" }
 export default async function SettingsPage({
   searchParams,
 }: {

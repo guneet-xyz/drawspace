@@ -1,10 +1,10 @@
-import { AuthCard } from '@/components/auth-card'
-import { EmailLinkRequest } from '@/components/email-auth-forms'
-import { LINK_MINUTES } from '@/lib/email-auth'
-import { mailEnabled } from '@/lib/mail'
+import { AuthCard } from "@/components/auth-card"
+import { EmailLinkRequest } from "@/components/email-auth-forms"
+import { LINK_MINUTES } from "@/lib/email-auth"
+import { mailEnabled } from "@/lib/mail"
 
-export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Forgot password' }
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Forgot password" }
 
 export default function ForgotPassword() {
   return (

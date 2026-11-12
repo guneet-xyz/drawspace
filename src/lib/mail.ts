@@ -1,5 +1,6 @@
-import 'server-only'
-import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
+import "server-only"
+
+import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2"
 
 export function mailEnabled() {
   return Boolean(
@@ -17,7 +18,7 @@ export async function sendEmail(message: {
   subject: string
   text: string
 }) {
-  if (!mailEnabled()) throw new Error('Email delivery is not configured.')
+  if (!mailEnabled()) throw new Error("Email delivery is not configured.")
   client ??= new SESv2Client({ region: process.env.AWS_REGION, maxAttempts: 3 })
   await client.send(
     new SendEmailCommand({
@@ -26,8 +27,8 @@ export async function sendEmail(message: {
       ConfigurationSetName: process.env.SES_CONFIGURATION_SET || undefined,
       Content: {
         Simple: {
-          Subject: { Data: message.subject, Charset: 'UTF-8' },
-          Body: { Text: { Data: message.text, Charset: 'UTF-8' } },
+          Subject: { Data: message.subject, Charset: "UTF-8" },
+          Body: { Text: { Data: message.text, Charset: "UTF-8" } },
         },
       },
     }),

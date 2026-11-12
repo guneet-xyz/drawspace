@@ -1,19 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { z } from 'zod'
-import type { TransactionSql } from 'postgres'
-import { sql } from '@/lib/db'
-import { createSession, getUser, SESSION_COOKIE } from '@/lib/auth'
-import { hashPassword, hashToken, token, verifyPassword } from '@/lib/crypto'
-import { getDrawing, getDrawings, getMembers, getWorkspaces } from '@/lib/data'
-import { canEdit, canManage, canManageMember } from '@/lib/permissions'
-import { consumeRateLimit } from '@/lib/rate-limit'
+import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from "next/server"
+import type { TransactionSql } from "postgres"
+import { z } from "zod"
+
+import { createSession, getUser, SESSION_COOKIE } from "@/lib/auth"
+import { hashPassword, hashToken, token, verifyPassword } from "@/lib/crypto"
+import { getDrawing, getDrawings, getMembers, getWorkspaces } from "@/lib/data"
+import { sql } from "@/lib/db"
 import {
   confirmEmailSignIn,
   confirmPasswordReset,
   requestEmailLink,
-} from '@/lib/email-auth'
-import { mailEnabled } from '@/lib/mail'
+} from "@/lib/email-auth"
+import { mailEnabled } from "@/lib/mail"
+import { canEdit, canManage, canManageMember } from "@/lib/permissions"
+import { consumeRateLimit } from "@/lib/rate-limit"
+import type { Role } from "@/lib/types"
 import {
   emailSchema,
   idSchema,
@@ -23,11 +25,10 @@ import {
   saveSchema,
   sceneSchema,
   titleSchema,
-} from '@/lib/validation'
-import type { Role } from '@/lib/types'
+} from "@/lib/validation"
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 class HttpError extends Error {
   constructor(
@@ -38,23 +39,23 @@ class HttpError extends Error {
   }
 }
 const deny = () => {
-  throw new HttpError(403, 'You do not have permission to do this.')
+  throw new HttpError(403, "You do not have permission to do this.")
 }
 const missing = () => {
   throw new HttpError(
     404,
-    'This resource was not found, or you do not have access.',
+    "This resource was not found, or you do not have access.",
   )
 }
 const ok = (value: unknown = { success: true }, status = 200) =>
-  NextResponse.json(value, { status, headers: { 'Cache-Control': 'no-store' } })
+  NextResponse.json(value, { status, headers: { "Cache-Control": "no-store" } })
 
 async function body(req: NextRequest): Promise<unknown> {
   const limit = 16 * 1024 * 1024
-  if (Number(req.headers.get('content-length')) > limit)
-    throw new HttpError(413, 'Drawing is too large. Maximum size is 16 MB.')
+  if (Number(req.headers.get("content-length")) > limit)
+    throw new HttpError(413, "Drawing is too large. Maximum size is 16 MB.")
   const reader = req.body?.getReader()
-  if (!reader) throw new HttpError(400, 'A JSON body is required.')
+  if (!reader) throw new HttpError(400, "A JSON body is required.")
   const chunks: Uint8Array[] = []
   let size = 0
   while (true) {
@@ -63,20 +64,20 @@ async function body(req: NextRequest): Promise<unknown> {
     size += value.byteLength
     if (size > limit) {
       await reader.cancel()
-      throw new HttpError(413, 'Drawing is too large. Maximum size is 16 MB.')
+      throw new HttpError(413, "Drawing is too large. Maximum size is 16 MB.")
     }
     chunks.push(value)
   }
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"))
   } catch {
-    throw new HttpError(400, 'Invalid JSON body.')
+    throw new HttpError(400, "Invalid JSON body.")
   }
 }
 
 async function rateLimit(key: string, max: number, seconds: number) {
   if (!(await consumeRateLimit(key, max, seconds)))
-    throw new HttpError(429, 'Too many attempts. Please try again later.')
+    throw new HttpError(429, "Too many attempts. Please try again later.")
 }
 
 async function withWorkspace(
@@ -118,34 +119,34 @@ async function handle(
     const { path } = await context.params
     const [resource, rawId, action, rawChildId] = path
     const method = req.method
-    if (method !== 'GET') {
-      const expected = new URL(process.env.APP_URL || 'http://localhost:3000')
+    if (method !== "GET") {
+      const expected = new URL(process.env.APP_URL || "http://localhost:3000")
         .origin
-      if (req.headers.get('origin') !== expected)
+      if (req.headers.get("origin") !== expected)
         throw new HttpError(
           403,
-          'Request origin is not allowed. Check APP_URL.',
+          "Request origin is not allowed. Check APP_URL.",
         )
       if (
-        method !== 'DELETE' &&
-        !req.headers.get('content-type')?.startsWith('application/json')
+        method !== "DELETE" &&
+        !req.headers.get("content-type")?.startsWith("application/json")
       )
-        throw new HttpError(415, 'Use application/json.')
+        throw new HttpError(415, "Use application/json.")
     }
 
-    if (resource === 'health' && method === 'GET' && path.length === 1) {
+    if (resource === "health" && method === "GET" && path.length === 1) {
       await sql`SELECT 1`
-      return ok({ status: 'ok' })
+      return ok({ status: "ok" })
     }
 
-    if (resource === 'auth') {
-      if (rawId === 'register' && method === 'POST') {
-        if (process.env.ALLOW_REGISTRATION === 'false')
+    if (resource === "auth") {
+      if (rawId === "register" && method === "POST") {
+        if (process.env.ALLOW_REGISTRATION === "false")
           throw new HttpError(
             403,
-            'Registration is disabled. Contact your administrator.',
+            "Registration is disabled. Contact your administrator.",
           )
-        await rateLimit('registration', 30, 3600)
+        await rateLimit("registration", 30, 3600)
         const data = z
           .object({
             name: nameSchema,
@@ -158,14 +159,14 @@ async function handle(
           const [user] =
             await tx`INSERT INTO users (name, email, password_hash) VALUES (${data.name}, ${data.email}, ${passwordHash}) RETURNING id, name, email`
           const [workspace] =
-            await tx`INSERT INTO workspaces (name) VALUES (${`${data.name.split(' ')[0]}'s workspace`}) RETURNING id`
+            await tx`INSERT INTO workspaces (name) VALUES (${`${data.name.split(" ")[0]}'s workspace`}) RETURNING id`
           await tx`INSERT INTO memberships (workspace_id, user_id, role) VALUES (${workspace.id}, ${user.id}, 'owner')`
           return user
         })
         await createSession(user.id)
         return ok(user, 201)
       }
-      if (rawId === 'login' && method === 'POST') {
+      if (rawId === "login" && method === "POST") {
         const data = z
           .object({ email: emailSchema, password: z.string().min(1).max(128) })
           .parse(await body(req))
@@ -175,14 +176,14 @@ async function handle(
         // Still run scrypt for missing accounts to reduce email enumeration via timing.
         const valid = await verifyPassword(
           data.password,
-          user?.password_hash ?? `${'0'.repeat(32)}:${'0'.repeat(128)}`,
+          user?.password_hash ?? `${"0".repeat(32)}:${"0".repeat(128)}`,
         )
         if (!user || !valid)
-          throw new HttpError(401, 'Incorrect email or password.')
+          throw new HttpError(401, "Incorrect email or password.")
         await createSession(user.id)
         return ok({ id: user.id, name: user.name, email: user.email })
       }
-      if (rawId === 'logout' && method === 'POST') {
+      if (rawId === "logout" && method === "POST") {
         const cookie = (await cookies()).get(SESSION_COOKIE)?.value
         if (cookie)
           await sql`DELETE FROM sessions WHERE token_hash = ${hashToken(cookie)}`
@@ -190,25 +191,25 @@ async function handle(
         return ok()
       }
       if (
-        (rawId === 'password-reset' || rawId === 'email-sign-in') &&
-        method === 'POST' &&
+        (rawId === "password-reset" || rawId === "email-sign-in") &&
+        method === "POST" &&
         path.length <= 3
       ) {
         if (!mailEnabled())
-          throw new HttpError(404, 'Email links are not available here.')
+          throw new HttpError(404, "Email links are not available here.")
         const purpose =
-          rawId === 'password-reset' ? 'password_reset' : 'sign_in'
+          rawId === "password-reset" ? "password_reset" : "sign_in"
         if (!action) {
           const { email } = z
             .object({ email: emailSchema })
             .parse(await body(req))
           const result = await requestEmailLink(purpose, email)
-          if (result === 'limited')
+          if (result === "limited")
             throw new HttpError(
               429,
-              'Too many emails were requested. Please try again later.',
+              "Too many emails were requested. Please try again later.",
             )
-          if (result === 'failed')
+          if (result === "failed")
             throw new HttpError(
               503,
               "We couldn't send the email. Please try again later.",
@@ -216,9 +217,9 @@ async function handle(
           // Same response whether or not an account exists.
           return ok()
         }
-        if (action === 'confirm') {
+        if (action === "confirm") {
           let user
-          if (purpose === 'password_reset') {
+          if (purpose === "password_reset") {
             const data = z
               .object({ token: z.string().max(100), password: passwordSchema })
               .parse(await body(req))
@@ -235,7 +236,7 @@ async function handle(
           if (!user)
             throw new HttpError(
               400,
-              'This link is invalid, expired, or already used. Request a new one.',
+              "This link is invalid, expired, or already used. Request a new one.",
             )
           await createSession(user.id)
           return ok(user)
@@ -244,17 +245,17 @@ async function handle(
     }
 
     const user = await getUser()
-    if (!user) throw new HttpError(401, 'Please sign in to continue.')
+    if (!user) throw new HttpError(401, "Please sign in to continue.")
 
-    if (resource === 'account' && path.length === 1) {
-      if (method === 'GET') return ok(user)
-      if (method === 'PATCH') {
+    if (resource === "account" && path.length === 1) {
+      if (method === "GET") return ok(user)
+      if (method === "PATCH") {
         const data = z.object({ name: nameSchema }).parse(await body(req))
         await sql`UPDATE users SET name = ${data.name} WHERE id = ${user.id}`
         return ok({ ...user, name: data.name })
       }
     }
-    if (resource === 'account' && rawId === 'password' && method === 'POST') {
+    if (resource === "account" && rawId === "password" && method === "POST") {
       await rateLimit(`password:${user.id}`, 10, 900)
       const data = z
         .object({
@@ -267,10 +268,10 @@ async function handle(
       if (!record.password_hash)
         throw new HttpError(
           400,
-          'This account signs in with Discord and has no password to change.',
+          "This account signs in with Discord and has no password to change.",
         )
       if (!(await verifyPassword(data.currentPassword, record.password_hash)))
-        throw new HttpError(400, 'Your current password is incorrect.')
+        throw new HttpError(400, "Your current password is incorrect.")
       const passwordHash = await hashPassword(data.password)
       await sql.begin(async (tx) => {
         await tx`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${user.id}`
@@ -280,23 +281,23 @@ async function handle(
       return ok()
     }
 
-    if (resource === 'workspaces') {
+    if (resource === "workspaces") {
       if (path.length === 1) {
-        if (method === 'GET') return ok(await getWorkspaces(user.id))
-        if (method === 'POST') {
+        if (method === "GET") return ok(await getWorkspaces(user.id))
+        if (method === "POST") {
           const data = z.object({ name: nameSchema }).parse(await body(req))
           await rateLimit(`workspaces:${user.id}`, 30, 3600)
           const workspace = await sql.begin(async (tx) => {
             const [w] =
               await tx`INSERT INTO workspaces (name) VALUES (${data.name}) RETURNING id, name`
             await tx`INSERT INTO memberships (workspace_id, user_id, role) VALUES (${w.id}, ${user.id}, 'owner')`
-            return { ...w, role: 'owner', member_count: 1 }
+            return { ...w, role: "owner", member_count: 1 }
           })
           return ok(workspace, 201)
         }
       }
       const id = idSchema.parse(rawId)
-      if (!action && method === 'PATCH') {
+      if (!action && method === "PATCH") {
         const data = z.object({ name: nameSchema }).parse(await body(req))
         return ok(
           await withWorkspace(id, user.id, async (tx, role) => {
@@ -307,25 +308,25 @@ async function handle(
           }),
         )
       }
-      if (!action && method === 'DELETE') {
+      if (!action && method === "DELETE") {
         await withWorkspace(id, user.id, async (tx, role) => {
-          if (role !== 'owner') deny()
+          if (role !== "owner") deny()
           await tx`DELETE FROM workspaces WHERE id = ${id}`
         })
         return ok()
       }
-      if (action === 'drawings' && method === 'GET') {
+      if (action === "drawings" && method === "GET") {
         const workspaces = await getWorkspaces(user.id)
         if (!workspaces.some((w) => w.id === id)) missing()
         return ok(await getDrawings(id, user.id))
       }
-      if (action === 'members') {
-        if (method === 'GET') {
+      if (action === "members") {
+        if (method === "GET") {
           const workspaces = await getWorkspaces(user.id)
           if (!workspaces.some((w) => w.id === id)) missing()
           return ok(await getMembers(id))
         }
-        if (method === 'POST') {
+        if (method === "POST") {
           const data = z
             .object({ email: emailSchema, role: roleSchema })
             .parse(await body(req))
@@ -336,22 +337,22 @@ async function handle(
             if (!target)
               throw new HttpError(
                 400,
-                'This person needs to create an account first. Ask them to sign up, then add them here.',
+                "This person needs to create an account first. Ask them to sign up, then add them here.",
               )
             const [added] =
               await tx`INSERT INTO memberships (workspace_id, user_id, role) VALUES (${id}, ${target.id}, ${data.role}) ON CONFLICT DO NOTHING RETURNING user_id`
             if (!added)
               throw new HttpError(
                 409,
-                'This person is already in the workspace.',
+                "This person is already in the workspace.",
               )
           })
           return ok(await getMembers(id), 201)
         }
         const targetId = idSchema.parse(rawChildId)
-        if (method === 'PATCH' || method === 'DELETE') {
+        if (method === "PATCH" || method === "DELETE") {
           const nextRole =
-            method === 'PATCH'
+            method === "PATCH"
               ? z.object({ role: roleSchema }).parse(await body(req)).role
               : undefined
           await withWorkspace(id, user.id, async (tx, role) => {
@@ -370,12 +371,12 @@ async function handle(
       }
     }
 
-    if (resource === 'drawings') {
-      if (path.length === 1 && method === 'POST') {
+    if (resource === "drawings") {
+      if (path.length === 1 && method === "POST") {
         const data = z
           .object({
             workspaceId: idSchema,
-            title: titleSchema.default('Untitled drawing'),
+            title: titleSchema.default("Untitled drawing"),
             scene: sceneSchema.optional(),
           })
           .parse(await body(req))
@@ -394,12 +395,12 @@ async function handle(
         return ok(drawing, 201)
       }
       const id = idSchema.parse(rawId)
-      if (!action && method === 'GET') {
+      if (!action && method === "GET") {
         const drawing = await getDrawing(id, user.id)
         if (!drawing) missing()
         return ok(drawing)
       }
-      if (!action && method === 'PATCH') {
+      if (!action && method === "PATCH") {
         const data = saveSchema.parse(await body(req))
         const drawing = await withDrawing(id, user.id, async (tx, role) => {
           if (!canEdit(role)) deny()
@@ -415,20 +416,20 @@ async function handle(
           if (!updated)
             throw new HttpError(
               409,
-              'This drawing changed in another tab. Export your changes before reloading.',
+              "This drawing changed in another tab. Export your changes before reloading.",
             )
           return updated
         })
         return ok(drawing)
       }
-      if (!action && method === 'DELETE') {
+      if (!action && method === "DELETE") {
         await withDrawing(id, user.id, async (tx, role) => {
           if (!canEdit(role)) deny()
           await tx`DELETE FROM drawings WHERE id = ${id}`
         })
         return ok()
       }
-      if (action === 'duplicate' && method === 'POST') {
+      if (action === "duplicate" && method === "POST") {
         const result = await withDrawing(id, user.id, async (tx, role) => {
           if (!canEdit(role)) deny()
           const [drawing] = await tx`
@@ -440,7 +441,7 @@ async function handle(
         })
         return ok(result, 201)
       }
-      if (action === 'favorite' && method === 'POST') {
+      if (action === "favorite" && method === "POST") {
         const data = z.object({ favorite: z.boolean() }).parse(await body(req))
         await withDrawing(id, user.id, async (tx) => {
           if (data.favorite)
@@ -450,8 +451,8 @@ async function handle(
         })
         return ok()
       }
-      if (action === 'shares') {
-        if (method === 'GET') {
+      if (action === "shares") {
+        if (method === "GET") {
           const drawing = await getDrawing(id, user.id)
           if (!drawing) missing()
           if (!canEdit(drawing.role)) deny()
@@ -459,7 +460,7 @@ async function handle(
             await sql`SELECT id, created_at, expires_at FROM shares WHERE drawing_id = ${id} AND (expires_at IS NULL OR expires_at > now()) ORDER BY created_at DESC`,
           )
         }
-        if (method === 'POST') {
+        if (method === "POST") {
           const data = z
             .object({
               expiresInDays: z.union([z.literal(7), z.literal(30)]).nullable(),
@@ -478,12 +479,12 @@ async function handle(
           return ok(
             {
               ...(share as object),
-              url: `${new URL(process.env.APP_URL || 'http://localhost:3000').origin}/share/${value}`,
+              url: `${new URL(process.env.APP_URL || "http://localhost:3000").origin}/share/${value}`,
             },
             201,
           )
         }
-        if (method === 'DELETE') {
+        if (method === "DELETE") {
           const shareId = idSchema.parse(rawChildId)
           await withDrawing(id, user.id, async (tx, role) => {
             if (!canEdit(role)) deny()
@@ -493,26 +494,26 @@ async function handle(
         }
       }
     }
-    throw new HttpError(404, 'Endpoint not found.')
+    throw new HttpError(404, "Endpoint not found.")
   } catch (error) {
     if (error instanceof HttpError)
       return ok({ error: error.message }, error.status)
     if (error instanceof z.ZodError)
-      return ok({ error: error.issues[0]?.message || 'Invalid input.' }, 400)
+      return ok({ error: error.issues[0]?.message || "Invalid input." }, 400)
     if (
       error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      error.code === '23505'
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "23505"
     )
       return ok(
-        { error: 'This email is already registered. Please sign in.' },
+        { error: "This email is already registered. Please sign in." },
         409,
       )
-    console.error('API request failed:', error)
+    console.error("API request failed:", error)
     return ok(
       {
-        error: 'The server could not complete your request. Please try again.',
+        error: "The server could not complete your request. Please try again.",
       },
       500,
     )

@@ -1,4 +1,5 @@
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from "lucide-react"
+
 export default function Loading() {
   return (
     <div className="flex min-h-[70dvh] items-center justify-center">

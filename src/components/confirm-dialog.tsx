@@ -1,9 +1,10 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Loader2 } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog"
 
 export function ConfirmDialog({
   open,
@@ -19,7 +20,7 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
-  label = 'Delete',
+  label = "Delete",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void

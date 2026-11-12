@@ -1,11 +1,12 @@
-import { notFound } from 'next/navigation'
-import { requireUser } from '@/lib/auth'
-import { getDrawing } from '@/lib/data'
-import { canEdit } from '@/lib/permissions'
-import { idSchema } from '@/lib/validation'
-import { EditorLoader } from '@/components/editor-loader'
+import { notFound } from "next/navigation"
 
-export const metadata = { title: 'Drawing' }
+import { EditorLoader } from "@/components/editor-loader"
+import { requireUser } from "@/lib/auth"
+import { getDrawing } from "@/lib/data"
+import { canEdit } from "@/lib/permissions"
+import { idSchema } from "@/lib/validation"
+
+export const metadata = { title: "Drawing" }
 export default async function DrawingPage({
   params,
 }: {

@@ -1,10 +1,11 @@
-'use client'
+"use client"
 
-import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
-import type { EditorProps } from '@/components/canvas-editor'
+import { Loader2 } from "lucide-react"
+import dynamic from "next/dynamic"
 
-const CanvasEditor = dynamic(() => import('@/components/canvas-editor'), {
+import type { EditorProps } from "@/components/canvas-editor"
+
+const CanvasEditor = dynamic(() => import("@/components/canvas-editor"), {
   ssr: false,
   loading: () => (
     <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-[#faf9fd]">

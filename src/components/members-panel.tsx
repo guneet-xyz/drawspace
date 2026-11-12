@@ -1,24 +1,25 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2, LockKeyhole, Plus, Shield, Trash2, Users } from 'lucide-react'
-import { toast } from 'sonner'
-import type { Member, Role, User, Workspace } from '@/lib/types'
-import { canManage, canManageMember } from '@/lib/permissions'
-import { api, json } from '@/lib/api-client'
-import { initials } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
+import { Loader2, LockKeyhole, Plus, Shield, Trash2, Users } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
+
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { ConfirmDialog } from '@/components/confirm-dialog'
+} from "@/components/ui/select"
+import { api, json } from "@/lib/api-client"
+import { canManage, canManageMember } from "@/lib/permissions"
+import type { Member, Role, User, Workspace } from "@/lib/types"
+import { initials } from "@/lib/utils"
 
 export function MembersPanel({
   workspace,
@@ -30,7 +31,7 @@ export function MembersPanel({
   user: User
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<Role>('editor')
+  const [role, setRole] = useState<Role>("editor")
   const [busy, setBusy] = useState(false)
   const [deleteWorkspace, setDeleteWorkspace] = useState(false)
   const [removing, setRemoving] = useState<Member | null>(null)
@@ -38,15 +39,15 @@ export function MembersPanel({
     event.preventDefault()
     setBusy(true)
     const form = event.currentTarget
-    const email = new FormData(form).get('email')
+    const email = new FormData(form).get("email")
     try {
       await api(`/workspaces/${workspace.id}/members`, {
-        method: 'POST',
+        method: "POST",
         body: json({ email, role }),
       })
       form.reset()
       router.refresh()
-      toast.success('Member added to your workspace')
+      toast.success("Member added to your workspace")
     } catch (error) {
       toast.error((error as Error).message)
     } finally {
@@ -56,11 +57,11 @@ export function MembersPanel({
   async function changeRole(member: Member, role: string) {
     try {
       await api(`/workspaces/${workspace.id}/members/${member.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: json({ role }),
       })
       router.refresh()
-      toast.success('Role updated')
+      toast.success("Role updated")
     } catch (error) {
       toast.error((error as Error).message)
     }
@@ -68,14 +69,14 @@ export function MembersPanel({
   async function rename(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true)
-    const name = new FormData(event.currentTarget).get('name')
+    const name = new FormData(event.currentTarget).get("name")
     try {
       await api(`/workspaces/${workspace.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: json({ name }),
       })
       router.refresh()
-      toast.success('Workspace name updated')
+      toast.success("Workspace name updated")
     } catch (error) {
       toast.error((error as Error).message)
     } finally {
@@ -121,7 +122,7 @@ export function MembersPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {workspace.role === 'owner' && (
+                  {workspace.role === "owner" && (
                     <SelectItem value="admin">Admin</SelectItem>
                   )}
                   <SelectItem value="editor">Editor</SelectItem>
@@ -147,7 +148,7 @@ export function MembersPanel({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
-                  {member.name}{' '}
+                  {member.name}{" "}
                   {member.id === user.id && (
                     <span className="text-xs font-normal text-muted-foreground">
                       (you)
@@ -171,7 +172,7 @@ export function MembersPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {workspace.role === 'owner' && (
+                      {workspace.role === "owner" && (
                         <SelectItem value="admin">Admin</SelectItem>
                       )}
                       <SelectItem value="editor">Editor</SelectItem>
@@ -190,7 +191,7 @@ export function MembersPanel({
                 </>
               ) : (
                 <Badge className="mr-1">
-                  {member.role === 'owner' && <Shield className="size-3" />}
+                  {member.role === "owner" && <Shield className="size-3" />}
                   {member.role}
                 </Badge>
               )}
@@ -205,20 +206,20 @@ export function MembersPanel({
         <div className="grid gap-5 sm:grid-cols-2">
           {[
             {
-              name: 'Owner',
-              text: 'Full access, including managing admins and permanently deleting the workspace.',
+              name: "Owner",
+              text: "Full access, including managing admins and permanently deleting the workspace.",
             },
             {
-              name: 'Admin',
-              text: 'Manage workspace settings, editors, viewers, drawings, and share links.',
+              name: "Admin",
+              text: "Manage workspace settings, editors, viewers, drawings, and share links.",
             },
             {
-              name: 'Editor',
-              text: 'Create, edit, duplicate, and delete drawings. Create and revoke share links.',
+              name: "Editor",
+              text: "Create, edit, duplicate, and delete drawings. Create and revoke share links.",
             },
             {
-              name: 'Viewer',
-              text: 'View drawings, download exports, and keep a personal list of favorites.',
+              name: "Viewer",
+              text: "View drawings, download exports, and keep a personal list of favorites.",
             },
           ].map(({ name, text }) => (
             <div key={name}>
@@ -256,7 +257,7 @@ export function MembersPanel({
           </form>
         </section>
       )}
-      {workspace.role === 'owner' && (
+      {workspace.role === "owner" && (
         <section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-100 bg-red-50/30 p-6">
           <div>
             <h2 className="text-sm font-semibold">Delete workspace</h2>
@@ -280,10 +281,10 @@ export function MembersPanel({
         description="Every drawing and share link in this workspace will be permanently deleted for everyone. This cannot be undone."
         label="Delete workspace"
         onConfirm={async () => {
-          await api(`/workspaces/${workspace.id}`, { method: 'DELETE' })
-          router.push('/app')
+          await api(`/workspaces/${workspace.id}`, { method: "DELETE" })
+          router.push("/app")
           router.refresh()
-          toast.success('Workspace deleted')
+          toast.success("Workspace deleted")
         }}
       />
       <ConfirmDialog
@@ -297,10 +298,10 @@ export function MembersPanel({
         onConfirm={async () => {
           if (removing) {
             await api(`/workspaces/${workspace.id}/members/${removing.id}`, {
-              method: 'DELETE',
+              method: "DELETE",
             })
             router.refresh()
-            toast.success('Member removed')
+            toast.success("Member removed")
           }
         }}
       />

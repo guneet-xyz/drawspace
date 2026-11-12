@@ -1,14 +1,16 @@
-import 'server-only'
-import type { TransactionSql } from 'postgres'
-import { sql } from '@/lib/db'
-import { hashPassword, hashToken, token } from '@/lib/crypto'
-import { appOrigin } from '@/lib/discord'
-import { consumeEmailQuota, LINK_TOKEN, plainText } from '@/lib/email-links'
-import { sendEmail } from '@/lib/mail'
-import { consumeRateLimit } from '@/lib/rate-limit'
-import type { User } from '@/lib/types'
+import "server-only"
 
-export type EmailLinkPurpose = 'sign_in' | 'password_reset'
+import type { TransactionSql } from "postgres"
+
+import { hashPassword, hashToken, token } from "@/lib/crypto"
+import { sql } from "@/lib/db"
+import { appOrigin } from "@/lib/discord"
+import { consumeEmailQuota, LINK_TOKEN, plainText } from "@/lib/email-links"
+import { sendEmail } from "@/lib/mail"
+import { consumeRateLimit } from "@/lib/rate-limit"
+import type { User } from "@/lib/types"
+
+export type EmailLinkPurpose = "sign_in" | "password_reset"
 
 export const LINK_MINUTES: Record<EmailLinkPurpose, number> = {
   sign_in: 15,
@@ -20,15 +22,15 @@ const LINKS: Record<
   { path: string; subject: string; lines: string[] }
 > = {
   sign_in: {
-    path: '/auth/email/confirm',
-    subject: 'Your Drawspace sign-in link',
+    path: "/auth/email/confirm",
+    subject: "Your Drawspace sign-in link",
     lines: [
       `Use this link to sign in to Drawspace within ${LINK_MINUTES.sign_in} minutes:`,
     ],
   },
   password_reset: {
-    path: '/reset-password',
-    subject: 'Reset your Drawspace password',
+    path: "/reset-password",
+    subject: "Reset your Drawspace password",
     lines: [
       `Use this link to choose a new Drawspace password within ${LINK_MINUTES.password_reset} minutes:`,
     ],
@@ -42,7 +44,7 @@ const LINKS: Record<
 export async function requestEmailLink(
   purpose: EmailLinkPurpose,
   email: string,
-): Promise<'sent' | 'no_account' | 'limited' | 'failed'> {
+): Promise<"sent" | "no_account" | "limited" | "failed"> {
   if (
     !(await consumeRateLimit(
       `email-request:${purpose}:${hashToken(email)}`,
@@ -50,12 +52,12 @@ export async function requestEmailLink(
       3600,
     ))
   )
-    return 'limited'
+    return "limited"
   const [user] = await sql<{ id: string; name: string; email: string }[]>`
     SELECT id, name, email FROM users WHERE email = ${email}
   `
-  if (!user) return 'no_account'
-  if (!(await consumeEmailQuota())) return 'limited'
+  if (!user) return "no_account"
+  if (!(await consumeEmailQuota())) return "limited"
   const value = token()
   await sql.begin(async (tx) => {
     // Only the newest link of each kind remains valid.
@@ -73,20 +75,20 @@ export async function requestEmailLink(
       subject: link.subject,
       text: [
         `Hi ${plainText(user.name)},`,
-        '',
+        "",
         ...link.lines,
-        '',
+        "",
         `${appOrigin()}${link.path}?token=${value}`,
-        '',
+        "",
         "If you didn't request this, ignore this email. Nothing will change.",
-      ].join('\n'),
+      ].join("\n"),
     })
   } catch {
     await sql`DELETE FROM email_tokens WHERE token_hash = ${hashToken(value)}`
     // Provider errors can include request metadata; never log them verbatim.
-    return 'failed'
+    return "failed"
   }
-  return 'sent'
+  return "sent"
 }
 
 /** Reads a link without consuming it, for its confirmation page. */
@@ -123,7 +125,7 @@ export async function confirmPasswordReset(
   if (!LINK_TOKEN.test(value)) return null
   const passwordHash = await hashPassword(password)
   return sql.begin(async (tx) => {
-    const [link] = await consume(tx, 'password_reset', value)
+    const [link] = await consume(tx, "password_reset", value)
     if (!link) return null
     const [user] = await tx<User[]>`
       UPDATE users SET password_hash = ${passwordHash},
@@ -149,7 +151,7 @@ export async function confirmEmailSignIn(
 ): Promise<User | null> {
   if (!LINK_TOKEN.test(value)) return null
   return sql.begin(async (tx) => {
-    const [link] = await consume(tx, 'sign_in', value)
+    const [link] = await consume(tx, "sign_in", value)
     if (!link) return null
     const [account] = await tx<{ verified: boolean }[]>`
       SELECT email_verified_at IS NOT NULL AS verified FROM users

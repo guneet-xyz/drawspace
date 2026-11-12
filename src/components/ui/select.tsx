@@ -1,9 +1,10 @@
-'use client'
+"use client"
 
-import * as React from 'react'
-import * as SelectPrimitive from '@radix-ui/react-select'
-import { Check, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { Check, ChevronDown } from "lucide-react"
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
 
 export const Select = SelectPrimitive.Root
 export const SelectValue = SelectPrimitive.Value
@@ -15,7 +16,7 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm shadow-xs outline-none focus:ring-2 focus:ring-ring disabled:opacity-50',
+        "flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm shadow-xs outline-none focus:ring-2 focus:ring-ring disabled:opacity-50",
         className,
       )}
       {...props}
@@ -50,7 +51,7 @@ export function SelectItem({
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
   return (
     <SelectPrimitive.Item
-      className="relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-3 text-sm outline-none focus:bg-accent data-[disabled]:opacity-50"
+      className="relative flex cursor-pointer items-center rounded-md py-2 pr-3 pl-8 text-sm outline-none select-none focus:bg-accent data-[disabled]:opacity-50"
       {...props}
     >
       <span className="absolute left-2">

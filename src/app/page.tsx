@@ -1,5 +1,3 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import {
   ArrowRight,
   Check,
@@ -7,14 +5,17 @@ import {
   LockKeyhole,
   Sparkles,
   Users,
-} from 'lucide-react'
-import { getUser } from '@/lib/auth'
-import { Logo } from '@/components/logo'
-import { Button } from '@/components/ui/button'
-import { IdeaPreview } from '@/components/idea-preview'
+} from "lucide-react"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+
+import { IdeaPreview } from "@/components/idea-preview"
+import { Logo } from "@/components/logo"
+import { Button } from "@/components/ui/button"
+import { getUser } from "@/lib/auth"
 
 export default async function Home() {
-  if (await getUser()) redirect('/app')
+  if (await getUser()) redirect("/app")
   return (
     <div className="min-h-dvh bg-[#fbfaf8]">
       <header className="mx-auto flex h-22 max-w-6xl items-center justify-between px-6">
@@ -84,7 +85,7 @@ export default async function Home() {
                 <span>∞ possibilities</span>
               </div>
             </div>
-            <span className="absolute -bottom-6 right-4 rotate-3 rounded-lg border border-[#eadca8] bg-[#fff6cd] px-5 py-3 text-sm text-[#927846] shadow-sm">
+            <span className="absolute right-4 -bottom-6 rotate-3 rounded-lg border border-[#eadca8] bg-[#fff6cd] px-5 py-3 text-sm text-[#927846] shadow-sm">
               a messy idea is a good start ✨
             </span>
           </div>
@@ -93,18 +94,18 @@ export default async function Home() {
           {[
             {
               icon: FolderOpen,
-              title: 'Everything in its place',
-              text: 'Organize sketches in workspaces. Save automatically and pick up right where you left off.',
+              title: "Everything in its place",
+              text: "Organize sketches in workspaces. Save automatically and pick up right where you left off.",
             },
             {
               icon: Users,
-              title: 'A space for your people',
-              text: 'Bring your team in with clear owner, admin, editor, and viewer roles.',
+              title: "A space for your people",
+              text: "Bring your team in with clear owner, admin, editor, and viewer roles.",
             },
             {
               icon: LockKeyhole,
-              title: 'Share on your terms',
-              text: 'Create read-only links, set an expiry, and revoke access whenever you need.',
+              title: "Share on your terms",
+              text: "Create read-only links, set an expiry, and revoke access whenever you need.",
             },
           ].map(({ icon: Icon, title, text }) => (
             <div key={title} className="rounded-2xl border bg-white/70 p-6">

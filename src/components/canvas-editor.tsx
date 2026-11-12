@@ -1,22 +1,19 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Excalidraw,
   exportToBlob,
   exportToSvg,
   restore,
   serializeAsJSON,
-} from '@excalidraw/excalidraw'
+} from "@excalidraw/excalidraw"
+import type { OrderedExcalidrawElement } from "@excalidraw/excalidraw/element/types"
 import type {
   AppState,
   BinaryFiles,
   ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
-} from '@excalidraw/excalidraw/types'
-import type { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types'
+} from "@excalidraw/excalidraw/types"
 import {
   ArrowLeft,
   ChevronDown,
@@ -29,34 +26,39 @@ import {
   Share2,
   TriangleAlert,
   X,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { ApiError, api, json } from '@/lib/api-client'
-import type { Scene } from '@/lib/types'
-import { sceneSchema } from '@/lib/validation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
+} from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+
+import { Logo } from "@/components/logo"
+import { ShareDialog } from "@/components/share-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Logo } from '@/components/logo'
-import { ShareDialog } from '@/components/share-dialog'
-import '@excalidraw/excalidraw/index.css'
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { api, ApiError, json } from "@/lib/api-client"
+import type { Scene } from "@/lib/types"
+import { sceneSchema } from "@/lib/validation"
+
+import "@excalidraw/excalidraw/index.css"
 
 declare global {
   interface Window {
     EXCALIDRAW_ASSET_PATH: string
   }
 }
-if (typeof window !== 'undefined')
-  window.EXCALIDRAW_ASSET_PATH = '/excalidraw-assets/'
+if (typeof window !== "undefined")
+  window.EXCALIDRAW_ASSET_PATH = "/excalidraw-assets/"
 
 export type EditorProps = {
-  mode: 'saved' | 'guest' | 'shared'
+  mode: "saved" | "guest" | "shared"
   drawingId?: string
   workspaceId?: string
   workspaceName?: string
@@ -65,11 +67,11 @@ export type EditorProps = {
   version?: number
   readOnly?: boolean
 }
-type Status = 'saved' | 'unsaved' | 'saving' | 'error' | 'conflict'
+type Status = "saved" | "unsaved" | "saving" | "error" | "conflict"
 type LocalDrawing = { scene: Scene; title: string; version: number }
 const EMPTY_SCENE: Scene = {
   elements: [],
-  appState: { viewBackgroundColor: '#ffffff' },
+  appState: { viewBackgroundColor: "#ffffff" },
   files: {},
 }
 
@@ -79,7 +81,7 @@ function readLocal(key: string): LocalDrawing | null {
     if (!raw) return null
     const data = JSON.parse(raw)
     const parsed = sceneSchema.safeParse(data.scene)
-    if (!parsed.success || typeof data.title !== 'string') return null
+    if (!parsed.success || typeof data.title !== "string") return null
     return {
       scene: parsed.data,
       title: data.title,
@@ -92,7 +94,7 @@ function readLocal(key: string): LocalDrawing | null {
 
 function downloadBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
+  const a = document.createElement("a")
   a.href = url
   a.download = name
   a.click()
@@ -109,11 +111,11 @@ export default function CanvasEditor(props: EditorProps) {
   } = props
   const router = useRouter()
   const key =
-    mode === 'guest' ? 'drawspace:guest' : `drawspace:recovery:${drawingId}`
+    mode === "guest" ? "drawspace:guest" : `drawspace:recovery:${drawingId}`
   const [initial] = useState(() => {
-    const local = mode !== 'shared' && !readOnly ? readLocal(key) : null
-    const compatible = mode === 'guest' || local?.version === props.version
-    const stale = mode === 'saved' && local && !compatible ? local : null
+    const local = mode !== "shared" && !readOnly ? readLocal(key) : null
+    const compatible = mode === "guest" || local?.version === props.version
+    const stale = mode === "saved" && local && !compatible ? local : null
     // Keep an incompatible recovery separate before new edits replace the draft.
     if (stale) {
       try {
@@ -124,11 +126,11 @@ export default function CanvasEditor(props: EditorProps) {
     }
     return {
       scene: (compatible && local?.scene) || props.scene || EMPTY_SCENE,
-      title: (compatible && local?.title) || props.title || 'Untitled sketch',
-      recovered: mode === 'saved' && local && compatible,
+      title: (compatible && local?.title) || props.title || "Untitled sketch",
+      recovered: mode === "saved" && local && compatible,
       staleRecovery:
         stale ||
-        (mode === 'saved' && !readOnly ? readLocal(`${key}:stale`) : null),
+        (mode === "saved" && !readOnly ? readLocal(`${key}:stale`) : null),
     }
   })
   const [initialData] = useState(() => ({
@@ -137,11 +139,11 @@ export default function CanvasEditor(props: EditorProps) {
   }))
   const [title, setTitle] = useState(initial.title)
   const [status, setStatus] = useState<Status>(
-    initial.recovered ? 'unsaved' : 'saved',
+    initial.recovered ? "unsaved" : "saved",
   )
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState("")
   const [shareOpen, setShareOpen] = useState(false)
-  const [guestNotice, setGuestNotice] = useState(mode === 'guest')
+  const [guestNotice, setGuestNotice] = useState(mode === "guest")
   const [staleRecovery, setStaleRecovery] = useState(initial.staleRecovery)
   const [exporting, setExporting] = useState(false)
   const canvas = useRef<ExcalidrawImperativeAPI | null>(null)
@@ -163,9 +165,9 @@ export default function CanvasEditor(props: EditorProps) {
         json({ ...latest.current, version: currentVersion.current }),
       )
     } catch {
-      if (mode === 'guest')
+      if (mode === "guest")
         throw new Error(
-          'Browser storage is full or unavailable. Download your drawing to keep it safe.',
+          "Browser storage is full or unavailable. Download your drawing to keep it safe.",
         )
     }
   }, [key, mode])
@@ -173,7 +175,7 @@ export default function CanvasEditor(props: EditorProps) {
   const save = useCallback(async () => {
     if (
       readOnly ||
-      mode === 'shared' ||
+      mode === "shared" ||
       saving.current ||
       blocked.current ||
       revision.current === savedRevision.current
@@ -182,11 +184,11 @@ export default function CanvasEditor(props: EditorProps) {
     if (timer.current) clearTimeout(timer.current)
     const capturedRevision = revision.current
     const snapshot = { ...latest.current }
-    if (!snapshot.title.trim()) snapshot.title = 'Untitled drawing'
+    if (!snapshot.title.trim()) snapshot.title = "Untitled drawing"
     saving.current = true
-    if (mounted.current) setStatus('saving')
+    if (mounted.current) setStatus("saving")
     try {
-      if (mode === 'guest') storeRecovery()
+      if (mode === "guest") storeRecovery()
       else {
         let thumbnail: string | null = null
         const editor = canvas.current
@@ -212,7 +214,7 @@ export default function CanvasEditor(props: EditorProps) {
         const result = await api<{ version: number }>(
           `/drawings/${drawingId}`,
           {
-            method: 'PATCH',
+            method: "PATCH",
             body: json({
               ...snapshot,
               version: currentVersion.current,
@@ -224,7 +226,7 @@ export default function CanvasEditor(props: EditorProps) {
       }
       savedRevision.current = capturedRevision
       if (revision.current === capturedRevision) {
-        if (mode === 'saved') {
+        if (mode === "saved") {
           try {
             localStorage.removeItem(key)
           } catch {
@@ -232,18 +234,18 @@ export default function CanvasEditor(props: EditorProps) {
           }
         }
         if (mounted.current) {
-          setStatus('saved')
-          setMessage('')
+          setStatus("saved")
+          setMessage("")
         }
       } else {
         storeRecovery()
-        if (mounted.current) setStatus('unsaved')
+        if (mounted.current) setStatus("unsaved")
       }
     } catch (error) {
       const conflict = error instanceof ApiError && error.status === 409
       if (conflict) blocked.current = true
       if (mounted.current) {
-        setStatus(conflict ? 'conflict' : 'error')
+        setStatus(conflict ? "conflict" : "error")
         setMessage((error as Error).message)
       }
     } finally {
@@ -252,7 +254,7 @@ export default function CanvasEditor(props: EditorProps) {
         mounted.current &&
         !blocked.current &&
         revision.current !== savedRevision.current &&
-        mode === 'saved'
+        mode === "saved"
       ) {
         timer.current = setTimeout(() => void flush.current(), 5000)
       }
@@ -265,35 +267,35 @@ export default function CanvasEditor(props: EditorProps) {
   useEffect(() => {
     mounted.current = true
     if (initial.recovered) {
-      toast.info('Recovered your unsaved changes from this browser')
+      toast.info("Recovered your unsaved changes from this browser")
       timer.current = setTimeout(() => void flush.current(), 1500)
     }
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (mode === 'saved' && revision.current !== savedRevision.current) {
+      if (mode === "saved" && revision.current !== savedRevision.current) {
         event.preventDefault()
-        event.returnValue = ''
+        event.returnValue = ""
       }
     }
     const visibility = () => {
-      if (document.visibilityState === 'hidden') void flush.current()
+      if (document.visibilityState === "hidden") void flush.current()
     }
-    window.addEventListener('beforeunload', beforeUnload)
-    document.addEventListener('visibilitychange', visibility)
+    window.addEventListener("beforeunload", beforeUnload)
+    document.addEventListener("visibilitychange", visibility)
     return () => {
       mounted.current = false
       if (timer.current) clearTimeout(timer.current)
-      window.removeEventListener('beforeunload', beforeUnload)
-      document.removeEventListener('visibilitychange', visibility)
+      window.removeEventListener("beforeunload", beforeUnload)
+      document.removeEventListener("visibilitychange", visibility)
     }
   }, [initial.recovered, mode])
 
   function dirty() {
     revision.current += 1
-    if (!blocked.current) setStatus('unsaved')
+    if (!blocked.current) setStatus("unsaved")
     try {
       storeRecovery()
     } catch (error) {
-      setStatus('error')
+      setStatus("error")
       setMessage((error as Error).message)
       return
     }
@@ -305,10 +307,10 @@ export default function CanvasEditor(props: EditorProps) {
     appState: AppState,
     files: BinaryFiles,
   ) {
-    if (readOnly || mode === 'shared') return
+    if (readOnly || mode === "shared") return
     // Excalidraw's "database" serializer intentionally omits image files.
     // Keep the portable local format so uploaded images survive a reload.
-    const serialized = serializeAsJSON(elements, appState, files, 'local')
+    const serialized = serializeAsJSON(elements, appState, files, "local")
     if (serialized === lastScene.current) return
     const first = lastScene.current === null
     lastScene.current = serialized
@@ -321,16 +323,16 @@ export default function CanvasEditor(props: EditorProps) {
     latest.current.title = value
     dirty()
   }
-  async function exportDrawing(format: 'excalidraw' | 'png' | 'svg') {
+  async function exportDrawing(format: "excalidraw" | "png" | "svg") {
     const editor = canvas.current
     if (!editor) return
     setExporting(true)
     try {
       const name =
-        (latest.current.title || 'drawing')
-          .replace(/[^a-z0-9 _-]/gi, '')
-          .slice(0, 100) || 'drawing'
-      if (format === 'excalidraw')
+        (latest.current.title || "drawing")
+          .replace(/[^a-z0-9 _-]/gi, "")
+          .slice(0, 100) || "drawing"
+      if (format === "excalidraw")
         downloadBlob(
           new Blob(
             [
@@ -338,16 +340,16 @@ export default function CanvasEditor(props: EditorProps) {
                 editor.getSceneElementsIncludingDeleted(),
                 editor.getAppState(),
                 editor.getFiles(),
-                'local',
+                "local",
               ),
             ],
-            { type: 'application/json' },
+            { type: "application/json" },
           ),
           `${name}.excalidraw`,
         )
       else if (!editor.getSceneElements().length)
-        toast.info('Add something to your canvas first')
-      else if (format === 'png')
+        toast.info("Add something to your canvas first")
+      else if (format === "png")
         downloadBlob(
           await exportToBlob({
             elements: editor.getSceneElements(),
@@ -365,7 +367,7 @@ export default function CanvasEditor(props: EditorProps) {
           renderEmbeddables: false,
         })
         downloadBlob(
-          new Blob([svg.outerHTML], { type: 'image/svg+xml' }),
+          new Blob([svg.outerHTML], { type: "image/svg+xml" }),
           `${name}.svg`,
         )
       }
@@ -379,13 +381,13 @@ export default function CanvasEditor(props: EditorProps) {
     await save()
     if (
       revision.current !== savedRevision.current &&
-      mode === 'saved' &&
+      mode === "saved" &&
       !window.confirm(
-        'Your latest changes are not saved to the server. A local recovery copy may be available, but downloading an export is safest. Leave anyway?',
+        "Your latest changes are not saved to the server. A local recovery copy may be available, but downloading an export is safest. Leave anyway?",
       )
     )
       return
-    router.push(mode === 'saved' ? `/app?w=${workspaceId}` : '/')
+    router.push(mode === "saved" ? `/app?w=${workspaceId}` : "/")
     router.refresh()
   }
 
@@ -404,11 +406,11 @@ export default function CanvasEditor(props: EditorProps) {
           <Logo
             compact
             className="hidden sm:inline-flex"
-            href={mode === 'saved' ? '/app' : '/'}
+            href={mode === "saved" ? "/app" : "/"}
           />
           <span className="hidden h-6 w-px bg-border sm:block" />
           <div className="min-w-0">
-            {readOnly || mode === 'shared' ? (
+            {readOnly || mode === "shared" ? (
               <h1 className="max-w-60 truncate text-sm font-medium">{title}</h1>
             ) : (
               <Input
@@ -416,23 +418,23 @@ export default function CanvasEditor(props: EditorProps) {
                 value={title}
                 onChange={(event) => updateTitle(event.target.value)}
                 onBlur={() => {
-                  if (!title.trim()) updateTitle('Untitled drawing')
+                  if (!title.trim()) updateTitle("Untitled drawing")
                 }}
                 maxLength={160}
                 className="h-7 w-35 border-transparent bg-transparent px-1 text-sm font-medium shadow-none hover:border-input focus:border-input sm:w-60"
               />
             )}
             <p className="hidden px-1 text-[10px] text-muted-foreground sm:block">
-              {mode === 'guest'
-                ? 'Your private, browser-only canvas'
-                : mode === 'shared'
-                  ? 'Shared drawing · read only'
+              {mode === "guest"
+                ? "Your private, browser-only canvas"
+                : mode === "shared"
+                  ? "Shared drawing · read only"
                   : workspaceName}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {readOnly || mode === 'shared' ? (
+          {readOnly || mode === "shared" ? (
             <Badge>
               <Eye className="size-3" />
               View only
@@ -442,28 +444,28 @@ export default function CanvasEditor(props: EditorProps) {
               role="status"
               className="hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex"
             >
-              {status === 'saving' ? (
+              {status === "saving" ? (
                 <Loader2 className="size-3 animate-spin" />
-              ) : status === 'saved' ? (
-                mode === 'guest' ? (
+              ) : status === "saved" ? (
+                mode === "guest" ? (
                   <HardDrive className="size-3" />
                 ) : (
                   <Cloud className="size-3" />
                 )
-              ) : status === 'error' || status === 'conflict' ? (
+              ) : status === "error" || status === "conflict" ? (
                 <TriangleAlert className="size-3 text-destructive" />
               ) : (
                 <span className="size-1.5 rounded-full bg-amber-400" />
               )}
-              {status === 'saved'
-                ? mode === 'guest'
-                  ? 'Saved in browser'
-                  : 'All changes saved'
-                : status === 'saving'
-                  ? 'Saving…'
-                  : status === 'unsaved'
-                    ? 'Unsaved changes'
-                    : 'Not saved'}
+              {status === "saved"
+                ? mode === "guest"
+                  ? "Saved in browser"
+                  : "All changes saved"
+                : status === "saving"
+                  ? "Saving…"
+                  : status === "unsaved"
+                    ? "Unsaved changes"
+                    : "Not saved"}
             </span>
           )}
           <DropdownMenu>
@@ -484,32 +486,32 @@ export default function CanvasEditor(props: EditorProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => exportDrawing('excalidraw')}>
+              <DropdownMenuItem onSelect={() => exportDrawing("excalidraw")}>
                 Excalidraw file (.excalidraw)
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => exportDrawing('png')}>
+              <DropdownMenuItem onSelect={() => exportDrawing("png")}>
                 Image (.png)
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => exportDrawing('svg')}>
+              <DropdownMenuItem onSelect={() => exportDrawing("svg")}>
                 Vector (.svg)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {mode === 'saved' && !readOnly && (
+          {mode === "saved" && !readOnly && (
             <Button
               size="sm"
               onClick={async () => {
                 await save()
                 if (revision.current === savedRevision.current)
                   setShareOpen(true)
-                else toast.error('Save your drawing before sharing it.')
+                else toast.error("Save your drawing before sharing it.")
               }}
             >
               <Share2 />
               Share
             </Button>
           )}
-          {mode === 'guest' && (
+          {mode === "guest" && (
             <Button size="sm" asChild>
               <Link href="/signup">
                 <LogIn />
@@ -517,7 +519,7 @@ export default function CanvasEditor(props: EditorProps) {
               </Link>
             </Button>
           )}
-          {mode === 'shared' && (
+          {mode === "shared" && (
             <Button size="sm" asChild>
               <Link href="/guest">Make your own</Link>
             </Button>
@@ -531,7 +533,7 @@ export default function CanvasEditor(props: EditorProps) {
           }}
           initialData={initialData}
           onChange={changed}
-          viewModeEnabled={readOnly || mode === 'shared'}
+          viewModeEnabled={readOnly || mode === "shared"}
           name={title}
           aiEnabled={false}
           validateEmbeddable={false}
@@ -558,7 +560,7 @@ export default function CanvasEditor(props: EditorProps) {
             </button>
           </div>
         )}
-        {(status === 'error' || status === 'conflict') && (
+        {(status === "error" || status === "conflict") && (
           <div
             role="alert"
             className="absolute bottom-5 left-1/2 z-20 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-xl border border-red-200 bg-white p-4 shadow-lg"
@@ -567,9 +569,9 @@ export default function CanvasEditor(props: EditorProps) {
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
               <div className="flex-1">
                 <p className="text-xs font-semibold">
-                  {status === 'conflict'
-                    ? 'Another version was saved'
-                    : 'Your changes are not saved'}
+                  {status === "conflict"
+                    ? "Another version was saved"
+                    : "Your changes are not saved"}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {message}
@@ -578,18 +580,18 @@ export default function CanvasEditor(props: EditorProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => exportDrawing('excalidraw')}
+                    onClick={() => exportDrawing("excalidraw")}
                   >
                     <Download />
                     Export backup
                   </Button>
-                  {status === 'conflict' ? (
+                  {status === "conflict" ? (
                     <Button
                       size="sm"
                       onClick={() => {
                         if (
                           window.confirm(
-                            'Make sure you exported your changes. Reload the server version?',
+                            "Make sure you exported your changes. Reload the server version?",
                           )
                         )
                           window.location.reload()
@@ -625,15 +627,15 @@ export default function CanvasEditor(props: EditorProps) {
                     new Blob(
                       [
                         json({
-                          type: 'excalidraw',
+                          type: "excalidraw",
                           version: 2,
-                          source: 'drawspace',
+                          source: "drawspace",
                           ...staleRecovery.scene,
                         }),
                       ],
-                      { type: 'application/json' },
+                      { type: "application/json" },
                     ),
-                    'recovered-drawing.excalidraw',
+                    "recovered-drawing.excalidraw",
                   )
                 }
               >

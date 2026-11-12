@@ -4,7 +4,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - '${PORT:-3000}:3000'
+      - "${PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgres://drawspace:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/drawspace
       APP_URL: ${APP_URL:-http://localhost:3000}
@@ -17,16 +17,16 @@ services:
       SES_CONFIGURATION_SET: ${SES_CONFIGURATION_SET:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_EC2_METADATA_DISABLED: 'true'
+      AWS_EC2_METADATA_DISABLED: "true"
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
+          "CMD",
+          "node",
+          "-e",
           "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 30s
@@ -47,7 +47,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U drawspace -d drawspace']
+      test: ["CMD-SHELL", "pg_isready -U drawspace -d drawspace"]
       interval: 5s
       timeout: 5s
       retries: 10

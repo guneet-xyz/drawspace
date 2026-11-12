@@ -1,10 +1,11 @@
-import Link from 'next/link'
-import { getDiscordEmailLink } from '@/lib/discord-email-link'
-import { Logo } from '@/components/logo'
-import { Button } from '@/components/ui/button'
+import Link from "next/link"
 
-export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Connect Discord', referrer: 'no-referrer' }
+import { Logo } from "@/components/logo"
+import { Button } from "@/components/ui/button"
+import { getDiscordEmailLink } from "@/lib/discord-email-link"
+
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Connect Discord", referrer: "no-referrer" }
 
 export default async function ConfirmDiscord({
   searchParams,
@@ -28,11 +29,11 @@ export default async function ConfirmDiscord({
           >
             <input type="hidden" name="token" value={token} />
             <p className="text-sm text-muted-foreground">
-              Connect the Discord account{' '}
+              Connect the Discord account{" "}
               <strong className="text-foreground">
                 {request.discord_name}
-              </strong>{' '}
-              to the Drawspace account for{' '}
+              </strong>{" "}
+              to the Drawspace account for{" "}
               <strong className="text-foreground">{request.email}</strong>. This
               signs out all other sessions for this account.
             </p>

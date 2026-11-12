@@ -1,9 +1,10 @@
-import { notFound } from 'next/navigation'
-import { getSharedDrawing } from '@/lib/data'
-import { EditorLoader } from '@/components/editor-loader'
+import { notFound } from "next/navigation"
 
-export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Shared drawing', referrer: 'no-referrer' }
+import { EditorLoader } from "@/components/editor-loader"
+import { getSharedDrawing } from "@/lib/data"
+
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Shared drawing", referrer: "no-referrer" }
 export default async function SharedPage({
   params,
 }: {

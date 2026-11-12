@@ -1,6 +1,6 @@
 # Drawspace
 
-A self-hosted home for sketches, diagrams, and shared ideas. Built with **Next.js App Router**, the actual **open-source Excalidraw editor**, **shadcn/ui-style Radix components**, Tailwind CSS, and PostgreSQL. Uses **pnpm** and **Prettier with `semi: false`**.
+A self-hosted home for sketches, diagrams, and shared ideas. Built with **Next.js App Router**, the actual **open-source Excalidraw editor**, **shadcn/ui-style Radix components**, Tailwind CSS, and PostgreSQL. Uses **pnpm** and **Prettier** configured by the [workspace Prettier standard](https://git.guneet.dev/guneet/workspace/src/branch/main/decisions/prettier-configuration.md) (`pnpm format:write` formats everything).
 
 ## Included
 

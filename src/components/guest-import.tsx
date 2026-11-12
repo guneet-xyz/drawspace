@@ -1,18 +1,19 @@
-'use client'
+"use client"
 
-import { useState, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
-import { HardDrive, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { api, json } from '@/lib/api-client'
-import { sceneSchema } from '@/lib/validation'
-import { Button } from '@/components/ui/button'
+import { HardDrive, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState, useSyncExternalStore } from "react"
+import { toast } from "sonner"
+
+import { Button } from "@/components/ui/button"
+import { api, json } from "@/lib/api-client"
+import { sceneSchema } from "@/lib/validation"
 
 const subscribe = () => () => {}
 const getServerSnapshot = () => null
 const getSnapshot = () => {
   try {
-    return localStorage.getItem('drawspace:guest')
+    return localStorage.getItem("drawspace:guest")
   } catch {
     return null
   }
@@ -29,15 +30,15 @@ export function GuestImport({ workspaceId }: { workspaceId: string }) {
     try {
       const local = JSON.parse(raw!)
       const scene = sceneSchema.parse(local.scene)
-      const drawing = await api<{ id: string }>('/drawings', {
-        method: 'POST',
+      const drawing = await api<{ id: string }>("/drawings", {
+        method: "POST",
         body: json({
           workspaceId,
-          title: local.title || 'My guest sketch',
+          title: local.title || "My guest sketch",
           scene,
         }),
       })
-      toast.success('Your guest sketch has a new home')
+      toast.success("Your guest sketch has a new home")
       router.push(`/app/drawings/${drawing.id}`)
     } catch (error) {
       toast.error((error as Error).message)

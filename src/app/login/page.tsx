@@ -1,17 +1,18 @@
-import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/auth'
-import { AuthForm } from '@/components/auth-form'
-import { discordEnabled } from '@/lib/discord'
-import { discordErrorMessage } from '@/lib/discord-messages'
-import { mailEnabled } from '@/lib/mail'
+import { redirect } from "next/navigation"
 
-export const metadata = { title: 'Sign in' }
+import { AuthForm } from "@/components/auth-form"
+import { getUser } from "@/lib/auth"
+import { discordEnabled } from "@/lib/discord"
+import { discordErrorMessage } from "@/lib/discord-messages"
+import { mailEnabled } from "@/lib/mail"
+
+export const metadata = { title: "Sign in" }
 export default async function Login({
   searchParams,
 }: {
   searchParams: Promise<{ discord_error?: string; discord_email?: string }>
 }) {
-  if (await getUser()) redirect('/app')
+  if (await getUser()) redirect("/app")
   const params = await searchParams
   return (
     <AuthForm
@@ -20,8 +21,8 @@ export default async function Login({
       emailEnabled={mailEnabled()}
       discordError={discordErrorMessage(params.discord_error)}
       notice={
-        params.discord_email === 'sent'
-          ? 'Check your email. We sent a link to connect Discord to your existing account.'
+        params.discord_email === "sent"
+          ? "Check your email. We sent a link to connect Discord to your existing account."
           : undefined
       }
     />
