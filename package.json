@@ -1,6 +1,6 @@
 {
   "name": "drawspace",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "scripts": {
     "assets": "node scripts/copy-assets.mjs",
